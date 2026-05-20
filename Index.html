@@ -1,0 +1,1533 @@
+cat > /home/claude/netpulse_libya.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>نبض الشبكة | NetPulse Libya</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+:root{
+--primary:#FF6B35;--primary-light:#FF8C5A;--primary-dark:#E55A2B;
+--secondary:#050510;--secondary-light:#0a0a1a;
+--accent:#12122a;--accent-light:#1a1a3e;
+--gold:#D4AF37;--gold-light:#F0D878;
+--glass:rgba(255,255,255,0.06);--glass-border:rgba(255,255,255,0.12);
+--glass-ios:rgba(255,255,255,0.07);
+--text-primary:#FFFFFF;--text-secondary:rgba(255,255,255,0.75);--text-muted:rgba(255,255,255,0.45);
+--danger:#FF4444;--success:#00C853;--warning:#FFB300;--info:#00B0FF;
+--shadow:0 8px 32px rgba(0,0,0,0.4);--shadow-lg:0 20px 60px rgba(0,0,0,0.5);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{font-family:'Tajawal',sans-serif;background:linear-gradient(135deg,#020208 0%,#080818 50%,#0e0e24 100%);color:var(--text-primary);overflow-x:hidden;min-height:100vh;width:100%;}
+
+/* ===== LOADING ===== */
+#loading-screen{position:fixed;top:0;left:0;right:0;bottom:0;background:linear-gradient(135deg,#020208,#0a0a1a,#151530);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;transition:opacity .8s ease,visibility .8s ease;}
+#loading-screen.hidden{opacity:0;visibility:hidden;pointer-events:none;}
+.loading-container{position:relative;width:160px;height:160px;}
+.loading-ring{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:50%;border:3px solid transparent;animation:spin 2s linear infinite;}
+.loading-ring:nth-child(1){width:120px;height:120px;border-top-color:var(--primary);border-right-color:var(--gold);}
+.loading-ring:nth-child(2){width:90px;height:90px;border-top-color:var(--gold);border-left-color:var(--primary-light);animation-direction:reverse;animation-duration:1.5s;}
+.loading-ring:nth-child(3){width:60px;height:60px;border-top-color:var(--primary-light);animation-duration:1s;}
+.loading-core{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 40px rgba(255,107,53,.6);animation:core-pulse 2s ease-in-out infinite;}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}
+@keyframes core-pulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.2)}}
+.loading-text{margin-top:32px;font-size:28px;font-weight:900;letter-spacing:6px;background:linear-gradient(90deg,var(--primary),var(--gold),var(--primary-light));background-size:200%;-webkit-background-clip:text;-webkit-text-fill-color:transparent;animation:shimmer 2s linear infinite;}
+.loading-sub{font-size:11px;color:var(--text-muted);letter-spacing:8px;margin-top:6px;}
+.loading-progress{width:200px;height:4px;background:rgba(255,255,255,0.08);border-radius:4px;margin-top:24px;overflow:hidden;}
+.loading-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--gold));border-radius:4px;width:0;animation:load-progress 2.5s cubic-bezier(.4,0,.2,1) forwards;}
+.loading-pct{font-size:13px;font-weight:700;color:var(--primary-light);margin-top:8px;}
+@keyframes shimmer{0%{background-position:0%}100%{background-position:200%}}
+@keyframes load-progress{0%{width:0}50%{width:65%}100%{width:100%}}
+
+/* ===== PARTICLES ===== */
+#particles-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;}
+
+/* ===== LANDING ===== */
+#landing-page{position:fixed;top:0;left:0;right:0;bottom:0;z-index:10;display:flex;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(2,2,8,.98) 0%,rgba(8,8,24,.95) 100%);transition:transform .8s cubic-bezier(.77,0,.175,1),opacity .8s ease;overflow-y:auto;}
+#landing-page.hidden{transform:translateY(-100%);opacity:0;pointer-events:none;}
+.landing-content{text-align:center;z-index:2;padding:28px 20px;max-width:580px;width:100%;}
+.landing-logo{width:96px;height:96px;margin:0 auto 22px;border-radius:26px;background:linear-gradient(135deg,var(--primary),var(--gold));display:flex;align-items:center;justify-content:center;font-size:42px;box-shadow:0 0 60px rgba(255,107,53,.4),inset 0 1px 0 rgba(255,255,255,.3);animation:logo-float 4s ease-in-out infinite;position:relative;overflow:hidden;}
+.landing-logo::before{content:'';position:absolute;top:-50%;left:-50%;width:200%;height:200%;background:linear-gradient(45deg,transparent 40%,rgba(255,255,255,.25) 50%,transparent 60%);animation:logo-shine 3s ease-in-out infinite;}
+@keyframes logo-float{0%,100%{transform:translateY(0) rotateZ(0deg)}25%{transform:translateY(-8px) rotateZ(1deg)}75%{transform:translateY(-10px) rotateZ(-1deg)}}
+@keyframes logo-shine{0%{transform:translateX(-100%) translateY(-100%)}100%{transform:translateX(100%) translateY(100%)}}
+.landing-title{font-size:clamp(32px,8vw,52px);font-weight:900;background:linear-gradient(135deg,#fff 0%,var(--gold-light) 50%,var(--primary-light) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;line-height:1.2;margin-bottom:6px;}
+.landing-subtitle{font-size:clamp(12px,3vw,16px);font-weight:300;color:var(--text-secondary);margin-bottom:14px;letter-spacing:8px;text-transform:uppercase;}
+.landing-desc{font-size:14px;color:var(--text-muted);line-height:1.9;margin-bottom:28px;max-width:440px;margin-left:auto;margin-right:auto;}
+.btn-primary{display:inline-flex;align-items:center;gap:10px;padding:16px 44px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;border-radius:16px;font-family:'Tajawal',sans-serif;font-size:17px;font-weight:700;cursor:pointer;box-shadow:0 4px 25px rgba(255,107,53,.4),inset 0 1px 0 rgba(255,255,255,.2);transition:all .3s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 8px 35px rgba(255,107,53,.5);}
+.btn-primary::before{content:'';position:absolute;top:0;left:-100%;width:100%;height:100%;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);transition:left .5s;}
+.btn-primary:hover::before{left:100%;}
+.landing-features{display:flex;gap:10px;margin-top:28px;flex-wrap:wrap;justify-content:center;}
+.landing-feature{display:flex;align-items:center;gap:8px;padding:10px 14px;background:var(--glass-ios);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.1);border-radius:12px;font-size:12px;color:var(--text-secondary);transition:all .3s ease;}
+.landing-feature:hover{transform:translateY(-2px);border-color:rgba(255,107,53,.3);}
+.landing-dev{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:32px;padding:14px 22px;background:var(--glass-ios);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.1);border-radius:18px;position:relative;overflow:hidden;}
+.landing-dev::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.25),transparent);}
+.landing-dev-avatar{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));display:flex;align-items:center;justify-content:center;font-size:20px;box-shadow:0 0 15px rgba(255,107,53,.3);flex-shrink:0;}
+.landing-dev-info{text-align:right;}
+.landing-dev-name{font-size:14px;font-weight:800;color:var(--text-primary);}
+.landing-dev-title{font-size:11px;color:var(--primary-light);margin-top:2px;}
+.landing-dev-email{font-size:10px;color:var(--text-muted);direction:ltr;margin-top:1px;}
+
+/* ===== ROLE SELECTION ===== */
+#role-selection{position:fixed;top:0;left:0;right:0;bottom:0;z-index:9;display:none;flex-direction:column;align-items:center;justify-content:center;background:linear-gradient(180deg,rgba(2,2,8,.98) 0%,rgba(10,10,26,.95) 100%);padding:20px;}
+#role-selection.active{display:flex;}
+.role-cards{display:flex;gap:22px;flex-wrap:wrap;justify-content:center;margin-top:20px;}
+.role-card{width:270px;padding:34px 26px;background:linear-gradient(135deg,rgba(255,255,255,.07) 0%,rgba(255,255,255,.02) 100%);backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,.13);border-radius:24px;text-align:center;cursor:pointer;transition:all .4s cubic-bezier(.34,1.56,.64,1);position:relative;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.3);}
+.role-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),var(--gold));transform:scaleX(0);transition:transform .4s ease;}
+.role-card:hover::before{transform:scaleX(1);}
+.role-card:hover{transform:translateY(-8px);border-color:var(--primary-light);box-shadow:0 25px 55px rgba(255,107,53,.2);}
+.role-card-icon{width:76px;height:76px;margin:0 auto 18px;border-radius:22px;display:flex;align-items:center;justify-content:center;font-size:34px;box-shadow:0 8px 25px rgba(0,0,0,.3);}
+.role-card.user .role-card-icon{background:linear-gradient(135deg,var(--info),#0066CC);box-shadow:0 8px 25px rgba(0,176,255,.3);}
+.role-card.company .role-card-icon{background:linear-gradient(135deg,var(--success),#00782E);box-shadow:0 8px 25px rgba(0,200,83,.3);}
+.role-card h3{font-size:20px;font-weight:800;margin-bottom:8px;}
+.role-card p{font-size:13px;color:var(--text-muted);line-height:1.7;}
+.back-btn{padding:10px 20px;background:var(--glass-ios);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.12);border-radius:12px;color:var(--text-secondary);font-family:'Tajawal',sans-serif;font-size:14px;cursor:pointer;transition:all .3s ease;display:inline-flex;align-items:center;gap:6px;}
+.back-btn:hover{background:rgba(255,255,255,.1);color:var(--text-primary);}
+
+/* ===== FORMS ===== */
+.form-overlay{position:fixed;top:0;left:0;right:0;bottom:0;z-index:8;display:none;align-items:center;justify-content:center;background:rgba(2,2,8,.95);backdrop-filter:blur(10px);padding:20px;overflow-y:auto;}
+.form-overlay.active{display:flex;}
+.form-container{width:100%;max-width:460px;background:linear-gradient(180deg,rgba(14,14,36,.97),rgba(20,20,50,.93));border:1px solid rgba(255,255,255,.13);border-radius:28px;padding:32px;box-shadow:0 30px 80px rgba(0,0,0,.6);}
+.form-header{text-align:center;margin-bottom:24px;}
+.form-header h2{font-size:26px;font-weight:800;background:linear-gradient(135deg,#fff,var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:6px;}
+.form-header p{font-size:13px;color:var(--text-muted);}
+.form-group{margin-bottom:15px;}
+.form-group label{display:block;font-size:13px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;}
+.form-group input,.form-group select,.form-group textarea{width:100%;padding:13px 16px;background:rgba(0,0,0,.35);border:1px solid rgba(255,255,255,.1);border-radius:13px;color:var(--text-primary);font-family:'Tajawal',sans-serif;font-size:14px;outline:none;transition:all .3s ease;}
+.form-group input:focus,.form-group select:focus,.form-group textarea:focus{border-color:var(--primary-light);box-shadow:0 0 0 4px rgba(255,107,53,.1);}
+.form-group select option{background:#0a0a1a;color:var(--text-primary);}
+.form-group textarea{min-height:80px;resize:vertical;}
+.city-search-container{position:relative;margin-bottom:8px;}
+.city-search-input{width:100%;padding:10px 14px 10px 38px;background:rgba(0,0,0,.25);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--text-primary);font-family:'Tajawal',sans-serif;font-size:13px;outline:none;transition:all .3s ease;}
+.city-search-input:focus{border-color:var(--primary-light);box-shadow:0 0 0 3px rgba(255,107,53,.1);}
+.city-search-icon{position:absolute;left:11px;top:50%;transform:translateY(-50%);font-size:15px;color:var(--text-muted);}
+.city-search-results{position:absolute;top:100%;left:0;right:0;max-height:190px;overflow-y:auto;background:rgba(14,14,36,.99);border:1px solid rgba(255,255,255,.1);border-radius:10px;margin-top:4px;z-index:200;display:none;}
+.city-search-results.active{display:block;}
+.city-search-item{padding:10px 14px;font-size:13px;cursor:pointer;transition:all .2s;border-bottom:1px solid rgba(255,255,255,.05);}
+.city-search-item:hover{background:rgba(255,107,53,.1);color:var(--primary-light);}
+.city-search-item:last-child{border-bottom:none;}
+.form-submit{width:100%;padding:15px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;border:none;border-radius:15px;font-family:'Tajawal',sans-serif;font-size:17px;font-weight:700;cursor:pointer;margin-top:8px;transition:all .3s ease;box-shadow:0 4px 20px rgba(255,107,53,.3),inset 0 1px 0 rgba(255,255,255,.2);position:relative;overflow:hidden;}
+.form-submit:hover{transform:translateY(-2px);box-shadow:0 8px 30px rgba(255,107,53,.45);}
+
+/* ===== MAIN APP ===== */
+#main-app{display:none;position:fixed;top:0;left:0;right:0;bottom:0;z-index:5;flex-direction:column;}
+#main-app.active{display:flex;}
+
+/* ===== TOP BAR ===== */
+.top-bar{position:fixed;top:0;left:0;right:0;height:60px;background:rgba(2,2,8,.88);backdrop-filter:blur(30px) saturate(180%);border-bottom:1px solid rgba(255,255,255,.08);z-index:100;display:flex;align-items:center;justify-content:space-between;padding:0 18px;box-shadow:0 4px 30px rgba(0,0,0,.35);}
+.top-bar-left{display:flex;align-items:center;gap:11px;}
+.top-bar-logo{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,var(--primary),var(--gold));display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:0 0 15px rgba(255,107,53,.3);}
+.top-bar-title{font-size:15px;font-weight:800;background:linear-gradient(135deg,#fff,var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.top-bar-right{display:flex;align-items:center;gap:10px;}
+.top-bar-user{display:flex;align-items:center;gap:8px;padding:6px 11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);border-radius:11px;font-size:13px;cursor:pointer;transition:all .3s;}
+.top-bar-user:hover{background:rgba(255,255,255,.1);}
+.top-bar-user-avatar{width:27px;height:27px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));display:flex;align-items:center;justify-content:center;font-size:12px;}
+.notification-btn{width:38px;height:38px;border-radius:11px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;font-size:17px;cursor:pointer;color:var(--text-primary);position:relative;transition:all .3s;}
+.notification-btn:hover{background:rgba(255,255,255,.12);border-color:var(--primary-light);}
+.notification-badge{position:absolute;top:-3px;left:-3px;width:17px;height:17px;background:var(--danger);border-radius:50%;font-size:9px;font-weight:800;display:flex;align-items:center;justify-content:center;animation:badge-pulse 2s ease-in-out infinite;box-shadow:0 0 8px var(--danger);}
+@keyframes badge-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.2)}}
+
+/* LOGOUT BUTTON */
+.logout-btn{width:36px;height:36px;border-radius:10px;background:rgba(255,68,68,.1);border:1px solid rgba(255,68,68,.2);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;color:var(--danger);transition:all .3s;}
+.logout-btn:hover{background:rgba(255,68,68,.2);border-color:var(--danger);transform:scale(1.05);}
+
+/* ===== MAP ===== */
+.map-container{position:fixed;top:60px;left:0;right:0;bottom:80px;z-index:6;display:none;}
+.map-container.active{display:block;}
+#map{width:100%;height:100%;background:#0a0a1a;}
+.leaflet-container{background:#0a0a1a !important;}
+.leaflet-popup-content-wrapper{background:rgba(14,14,36,.97) !important;backdrop-filter:blur(20px) !important;border:1px solid rgba(255,255,255,.15) !important;border-radius:16px !important;color:var(--text-primary) !important;font-family:'Tajawal',sans-serif !important;box-shadow:0 20px 50px rgba(0,0,0,.5) !important;}
+.leaflet-popup-tip{background:rgba(14,14,36,.97) !important;}
+.leaflet-popup-content{margin:12px 16px !important;font-size:13px !important;}
+.leaflet-popup-content h4{font-size:16px;font-weight:700;margin-bottom:8px;color:var(--primary-light);}
+.leaflet-popup-content p{margin:4px 0;font-size:12px;color:var(--text-secondary);}
+.leaflet-control-zoom a{background:rgba(14,14,36,.9) !important;color:var(--text-primary) !important;border-color:rgba(255,255,255,.12) !important;border-radius:9px !important;transition:all .3s !important;}
+.leaflet-control-zoom a:hover{background:var(--accent-light) !important;}
+
+/* ===== MAP OVERLAY BTNS ===== */
+.map-overlay-btns{position:fixed;top:76px;left:14px;z-index:50;display:none;flex-direction:column;gap:9px;}
+.map-overlay-btns.active{display:flex;}
+.map-overlay-btn{width:46px;height:46px;border-radius:13px;background:rgba(14,14,36,.92);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.13);color:var(--text-primary);font-size:19px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .3s cubic-bezier(.34,1.56,.64,1);box-shadow:0 4px 20px rgba(0,0,0,.3);position:relative;}
+.map-overlay-btn:hover{background:var(--accent-light);border-color:var(--primary-light);transform:scale(1.12);box-shadow:0 8px 25px rgba(255,107,53,.3);}
+.map-overlay-btn.active{background:var(--primary);border-color:var(--primary-light);box-shadow:0 0 20px rgba(255,107,53,.5);}
+.map-overlay-btn .tooltip{position:absolute;right:54px;background:rgba(14,14,36,.97);border:1px solid rgba(255,255,255,.13);border-radius:9px;padding:7px 11px;font-size:11px;white-space:nowrap;opacity:0;visibility:hidden;transition:all .3s;pointer-events:none;font-family:'Tajawal',sans-serif;}
+.map-overlay-btn:hover .tooltip{opacity:1;visibility:visible;}
+
+/* ===== BOTTOM NAV ===== */
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:80px;background:rgba(2,2,8,.92);backdrop-filter:blur(40px) saturate(180%);border-top:1px solid rgba(255,255,255,.08);z-index:100;display:flex;align-items:center;justify-content:space-around;padding:0 8px;padding-bottom:env(safe-area-inset-bottom,0);box-shadow:0 -4px 30px rgba(0,0,0,.35);}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 10px;border-radius:15px;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);color:var(--text-muted);border:none;background:none;font-family:'Tajawal',sans-serif;min-width:56px;}
+.nav-item:hover{color:var(--text-secondary);}
+.nav-item.active{color:var(--primary);background:rgba(255,107,53,.1);transform:translateY(-4px);}
+.nav-item.active .nav-icon{filter:drop-shadow(0 0 8px rgba(255,107,53,.5));}
+.nav-icon{font-size:22px;transition:all .3s;}
+.nav-label{font-size:10px;font-weight:600;}
+
+/* ===== SECTIONS ===== */
+.section{display:none;position:fixed;top:60px;left:0;right:0;bottom:80px;z-index:20;background:linear-gradient(180deg,rgba(2,2,8,.98) 0%,rgba(8,8,24,.96) 100%);overflow-y:auto;padding:18px;animation:section-in .4s cubic-bezier(.4,0,.2,1);}
+.section.active{display:block;}
+@keyframes section-in{from{opacity:0;transform:translateY(18px) scale(.98)}to{opacity:1;transform:translateY(0) scale(1)}}
+.section-header{margin-bottom:18px;}
+.section-header h2{font-size:23px;font-weight:800;background:linear-gradient(135deg,#fff,var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:5px;}
+.section-header p{font-size:13px;color:var(--text-muted);}
+
+/* ===== CARDS ===== */
+.glass-card{background:linear-gradient(135deg,rgba(255,255,255,.055) 0%,rgba(255,255,255,.02) 100%);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.09);border-radius:20px;padding:20px;margin-bottom:14px;box-shadow:0 8px 32px rgba(0,0,0,.2),inset 0 1px 0 rgba(255,255,255,.08);transition:all .3s;}
+.glass-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,.3);border-color:rgba(255,255,255,.13);}
+.glass-card h3{font-size:15px;font-weight:700;margin-bottom:13px;color:var(--primary-light);display:flex;align-items:center;gap:8px;}
+.glass-card h4{font-size:14px;font-weight:700;margin-bottom:11px;}
+
+/* ===== DEVICE GRID ===== */
+.device-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(90px,1fr));gap:9px;margin-bottom:14px;}
+.device-option{padding:13px 7px;background:rgba(0,0,0,.2);border:2px solid transparent;border-radius:13px;text-align:center;cursor:pointer;transition:all .3s cubic-bezier(.34,1.56,.64,1);font-size:11px;}
+.device-option:hover{border-color:rgba(255,255,255,.14);background:rgba(0,0,0,.3);transform:translateY(-2px);}
+.device-option.selected{border-color:var(--primary);background:rgba(255,107,53,.1);box-shadow:0 0 18px rgba(255,107,53,.15);transform:translateY(-2px) scale(1.02);}
+.device-option .device-icon{font-size:24px;margin-bottom:5px;display:block;}
+
+/* ===== SYMPTOMS ===== */
+.symptoms-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(135px,1fr));gap:7px;margin-bottom:14px;}
+.symptom-option{padding:9px 11px;background:rgba(0,0,0,.2);border:1px solid transparent;border-radius:9px;text-align:center;cursor:pointer;transition:all .3s;font-size:12px;}
+.symptom-option:hover{border-color:rgba(255,255,255,.09);}
+.symptom-option.selected{border-color:var(--danger);background:rgba(255,68,68,.1);color:var(--danger);}
+
+/* ===== DIAGNOSIS ===== */
+.diagnosis-result{background:linear-gradient(135deg,rgba(255,107,53,.07),rgba(212,175,55,.04));border:1px solid rgba(255,107,53,.25);border-radius:18px;padding:22px;margin-top:16px;animation:diag-in .5s cubic-bezier(.4,0,.2,1);}
+@keyframes diag-in{from{opacity:0;transform:translateY(18px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.diagnosis-result h4{font-size:17px;font-weight:800;color:var(--primary-light);margin-bottom:13px;display:flex;align-items:center;gap:8px;}
+.diag-cause{background:rgba(255,68,68,.07);border-right:3px solid var(--danger);padding:11px 14px;border-radius:0 11px 11px 0;margin-bottom:11px;}
+.diag-cause-label{font-size:11px;color:var(--danger);font-weight:700;margin-bottom:4px;}
+.diag-rec{background:rgba(0,200,83,.07);border-right:3px solid var(--success);padding:11px 14px;border-radius:0 11px 11px 0;margin-bottom:7px;transition:all .3s;}
+.diag-rec:hover{background:rgba(0,200,83,.11);transform:translateX(-3px);}
+.diag-rec-label{font-size:11px;color:var(--success);font-weight:700;margin-bottom:4px;}
+.prob-badge{display:inline-flex;align-items:center;padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;margin-right:7px;}
+.prob-high{background:rgba(255,68,68,.2);color:#FF4444;border:1px solid rgba(255,68,68,.3);}
+.prob-med{background:rgba(255,179,0,.2);color:#FFB300;border:1px solid rgba(255,179,0,.3);}
+.prob-low{background:rgba(0,200,83,.2);color:#00C853;border:1px solid rgba(0,200,83,.3);}
+
+/* ===== STATS ===== */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:11px;margin-bottom:18px;}
+.stat-card{background:linear-gradient(135deg,rgba(255,255,255,.055) 0%,rgba(255,255,255,.02) 100%);border:1px solid rgba(255,255,255,.09);border-radius:17px;padding:17px;text-align:center;transition:all .3s;box-shadow:0 4px 20px rgba(0,0,0,.2);}
+.stat-card:hover{transform:translateY(-3px);border-color:var(--primary-light);}
+.stat-card-icon{width:42px;height:42px;margin:0 auto 9px;border-radius:13px;display:flex;align-items:center;justify-content:center;font-size:21px;}
+.stat-card-value{font-size:25px;font-weight:900;background:linear-gradient(135deg,#fff,var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.stat-card-label{font-size:11px;color:var(--text-muted);margin-top:3px;}
+
+/* ===== CHARTS ===== */
+.chart-container{background:linear-gradient(135deg,rgba(255,255,255,.04),rgba(255,255,255,.015));border:1px solid rgba(255,255,255,.09);border-radius:17px;padding:17px;margin-bottom:14px;transition:all .3s;}
+.chart-container:hover{border-color:rgba(255,255,255,.13);}
+.chart-container h4{font-size:13px;font-weight:700;margin-bottom:13px;color:var(--text-secondary);}
+.chart-wrapper{position:relative;width:100%;height:220px;}
+@media(max-width:768px){.chart-wrapper{height:190px;}}
+
+/* ===== COVERAGE ===== */
+.coverage-bar{display:flex;align-items:center;gap:11px;margin-bottom:9px;}
+.coverage-bar-label{width:76px;font-size:11px;font-weight:600;}
+.coverage-bar-track{flex:1;height:7px;background:rgba(0,0,0,.3);border-radius:3px;overflow:hidden;}
+.coverage-bar-fill{height:100%;border-radius:3px;transition:width 1s ease;}
+.coverage-bar-value{width:38px;font-size:11px;font-weight:700;text-align:left;}
+.coverage-detail{background:rgba(0,0,0,.2);border-radius:11px;padding:12px;margin-top:10px;font-size:13px;line-height:1.8;border:1px solid rgba(255,255,255,.05);}
+
+/* ===== FEATURE LIST ===== */
+.feature-list{list-style:none;margin-top:11px;}
+.feature-list li{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(255,255,255,.07);font-size:13px;}
+.feature-list li:last-child{border-bottom:none;}
+.feature-list .check{width:22px;height:22px;border-radius:50%;background:rgba(0,200,83,.13);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;}
+
+/* ===== HOW TO USE STEPS ===== */
+.howto-step{display:flex;align-items:flex-start;gap:14px;padding:12px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+.howto-step:last-child{border-bottom:none;}
+.howto-num{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0;box-shadow:0 0 12px rgba(255,107,53,.3);}
+.howto-text{font-size:13px;color:var(--text-secondary);line-height:1.7;padding-top:5px;}
+
+/* ===== DEVELOPER SECTION ===== */
+.developer-section{background:linear-gradient(135deg,rgba(255,107,53,.06),rgba(212,175,55,.03));border:1px solid rgba(255,107,53,.15);border-radius:20px;padding:24px;margin-top:14px;position:relative;overflow:hidden;}
+.developer-section::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:linear-gradient(90deg,var(--primary),var(--gold),var(--primary));}
+.developer-avatar{width:58px;height:58px;border-radius:50%;background:linear-gradient(135deg,var(--primary),var(--gold));display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 14px;box-shadow:0 0 28px rgba(255,107,53,.3);}
+.developer-name{text-align:center;font-size:17px;font-weight:800;background:linear-gradient(135deg,#fff,var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;}
+.developer-title{text-align:center;font-size:12px;color:var(--text-muted);margin-bottom:14px;line-height:1.6;}
+.developer-projects{display:grid;gap:9px;}
+.developer-project{display:flex;align-items:center;gap:11px;padding:11px;background:rgba(0,0,0,.2);border-radius:11px;border:1px solid rgba(255,255,255,.05);transition:all .3s;}
+.developer-project:hover{background:rgba(0,0,0,.3);border-color:rgba(255,107,53,.18);transform:translateX(-3px);}
+.developer-project-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.developer-project-info h5{font-size:12px;font-weight:700;margin-bottom:2px;}
+.developer-project-info p{font-size:11px;color:var(--text-muted);}
+
+/* ===== NOTIFICATIONS ===== */
+.notification-panel{position:fixed;top:60px;left:14px;right:14px;max-height:360px;background:rgba(14,14,36,.98);backdrop-filter:blur(30px);border:1px solid rgba(255,255,255,.13);border-radius:18px;z-index:200;display:none;flex-direction:column;box-shadow:var(--shadow-lg);overflow:hidden;}
+.notification-panel.active{display:flex;animation:notif-in .3s ease;}
+@keyframes notif-in{from{opacity:0;transform:translateY(-10px)}to{opacity:1;transform:translateY(0)}}
+.notification-header{padding:13px 17px;border-bottom:1px solid rgba(255,255,255,.09);display:flex;justify-content:space-between;align-items:center;}
+.notification-header h4{font-size:14px;font-weight:700;}
+.notification-list{overflow-y:auto;padding:7px;}
+.notification-item{display:flex;align-items:flex-start;gap:11px;padding:11px;border-radius:11px;margin-bottom:3px;cursor:pointer;transition:all .3s;}
+.notification-item:hover{background:rgba(255,255,255,.05);}
+.notification-item-icon{width:34px;height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.notification-item-content{flex:1;}
+.notification-item-title{font-size:12px;font-weight:600;margin-bottom:2px;}
+.notification-item-time{font-size:10px;color:var(--text-muted);}
+
+/* ===== TOAST ===== */
+.toast-container{position:fixed;top:74px;left:50%;transform:translateX(-50%);z-index:1000;display:flex;flex-direction:column;gap:7px;pointer-events:none;}
+.toast{padding:13px 22px;border-radius:13px;font-size:14px;font-weight:600;display:flex;align-items:center;gap:9px;animation:toast-in .4s ease,toast-out .4s ease 3s forwards;box-shadow:var(--shadow-lg);pointer-events:auto;min-width:270px;max-width:85vw;backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,.09);}
+@keyframes toast-in{from{opacity:0;transform:translateY(-14px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+@keyframes toast-out{from{opacity:1;transform:translateY(0) scale(1)}to{opacity:0;transform:translateY(-14px) scale(.9)}}
+.toast.success{background:rgba(0,200,83,.95);color:#fff;}
+.toast.error{background:rgba(255,68,68,.95);color:#fff;}
+.toast.info{background:rgba(0,176,255,.95);color:#fff;}
+.toast.warning{background:rgba(255,179,0,.95);color:#0a0a1a;}
+
+/* ===== MAP FLY ANIMATION OVERLAY ===== */
+#map-fly-overlay{position:fixed;top:60px;left:0;right:0;bottom:80px;z-index:150;pointer-events:none;display:none;}
+#map-fly-overlay.active{display:block;}
+.map-fly-ripple{position:absolute;border-radius:50%;border:3px solid var(--primary);animation:fly-ripple 1.2s ease-out forwards;}
+@keyframes fly-ripple{0%{width:0;height:0;opacity:1;transform:translate(-50%,-50%)}100%{width:120px;height:120px;opacity:0;transform:translate(-50%,-50%)}}
+.map-fly-pin{position:absolute;transform:translate(-50%,-50%);animation:fly-pin-drop .6s cubic-bezier(.34,1.56,.64,1) forwards;opacity:0;}
+@keyframes fly-pin-drop{0%{opacity:0;transform:translate(-50%,-120%)}60%{opacity:1;transform:translate(-50%,-40%)}100%{opacity:1;transform:translate(-50%,-50%)}}
+.map-fly-trail{position:absolute;width:3px;background:linear-gradient(180deg,var(--primary),transparent);transform-origin:top center;animation:fly-trail .8s ease-out forwards;}
+@keyframes fly-trail{0%{opacity:1;height:60px}100%{opacity:0;height:0}}
+
+/* ===== COMPANY DASHBOARD ===== */
+.dashboard-header{background:linear-gradient(135deg,rgba(255,255,255,.055),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.09);border-radius:18px;padding:17px;margin-bottom:14px;display:flex;align-items:center;gap:13px;}
+.dashboard-header-icon{width:50px;height:50px;border-radius:15px;background:linear-gradient(135deg,var(--success),#00782E);display:flex;align-items:center;justify-content:center;font-size:24px;box-shadow:0 4px 15px rgba(0,200,83,.3);}
+.dashboard-header-info h3{font-size:16px;font-weight:800;}
+.dashboard-header-info p{font-size:12px;color:var(--text-muted);}
+.alert-item{background:rgba(255,68,68,.06);border:1px solid rgba(255,68,68,.11);border-radius:13px;padding:13px;margin-bottom:9px;display:flex;align-items:flex-start;gap:11px;transition:all .3s;}
+.alert-item:hover{background:rgba(255,68,68,.1);transform:translateX(-3px);}
+.alert-item-icon{width:34px;height:34px;border-radius:9px;background:rgba(255,68,68,.14);color:var(--danger);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+
+/* ===== DASHBOARD TABS ===== */
+.dashboard-tabs{display:flex;gap:8px;margin-bottom:16px;overflow-x:auto;padding-bottom:4px;}
+.dashboard-tab{padding:9px 18px;background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.09);border-radius:10px;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:600;color:var(--text-muted);cursor:pointer;white-space:nowrap;transition:all .3s;}
+.dashboard-tab.active{background:var(--primary);border-color:var(--primary);color:#fff;}
+.dashboard-tab:hover:not(.active){border-color:var(--primary-light);color:var(--text-secondary);}
+
+/* REPLY/TICKET */
+.ticket-card{background:rgba(0,0,0,.2);border:1px solid rgba(255,255,255,.09);border-radius:14px;padding:15px;margin-bottom:10px;transition:all .3s;}
+.ticket-card:hover{border-color:rgba(255,107,53,.2);}
+.ticket-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.ticket-status{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.ticket-status.pending{background:rgba(255,179,0,.2);color:var(--warning);}
+.ticket-status.replied{background:rgba(0,200,83,.2);color:var(--success);}
+.ticket-status.closed{background:rgba(255,255,255,.1);color:var(--text-muted);}
+.ticket-reply-box{margin-top:11px;display:none;}
+.ticket-reply-box.active{display:block;}
+.ticket-reply-input{width:100%;padding:10px 13px;background:rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.1);border-radius:10px;color:var(--text-primary);font-family:'Tajawal',sans-serif;font-size:13px;outline:none;resize:none;min-height:70px;}
+.ticket-reply-input:focus{border-color:var(--primary-light);}
+.ticket-replies{margin-top:10px;display:flex;flex-direction:column;gap:7px;}
+.reply-bubble{padding:10px 13px;border-radius:11px;font-size:12px;line-height:1.6;}
+.reply-user{background:rgba(0,176,255,.1);border:1px solid rgba(0,176,255,.15);border-radius:11px 11px 11px 0;}
+.reply-company{background:rgba(0,200,83,.1);border:1px solid rgba(0,200,83,.15);border-radius:11px 11px 0 11px;text-align:left;}
+.reply-meta{font-size:10px;color:var(--text-muted);margin-top:4px;}
+
+/* ANNOUNCEMENT */
+.announcement-card{background:linear-gradient(135deg,rgba(212,175,55,.08),rgba(255,107,53,.04));border:1px solid rgba(212,175,55,.2);border-radius:14px;padding:15px;margin-bottom:10px;position:relative;overflow:hidden;}
+.announcement-card::before{content:'';position:absolute;top:0;right:0;width:4px;height:100%;background:linear-gradient(180deg,var(--gold),var(--primary));}
+.announcement-card h5{font-size:14px;font-weight:700;margin-bottom:6px;color:var(--gold-light);}
+.announcement-card p{font-size:13px;color:var(--text-secondary);line-height:1.7;}
+.announcement-card .announcement-meta{font-size:11px;color:var(--text-muted);margin-top:8px;}
+
+/* ===== COVERAGE SECTION ===== */
+.coverage-panel-section{display:none;position:fixed;top:60px;left:0;right:0;bottom:80px;z-index:25;background:linear-gradient(180deg,rgba(2,2,8,.98),rgba(8,8,24,.97));overflow-y:auto;padding:18px;animation:section-in .4s ease;}
+.coverage-panel-section.active{display:block;}
+
+/* ===== RESPONSIVE ===== */
+@media(max-width:768px){.role-cards{flex-direction:column;align-items:center;}.role-card{width:100%;max-width:310px;}.stats-grid{grid-template-columns:repeat(2,1fr);}.device-grid{grid-template-columns:repeat(3,1fr);}.symptoms-grid{grid-template-columns:repeat(2,1fr);}}
+@media(min-width:1024px){.section{padding:22px 34px;}.stats-grid{grid-template-columns:repeat(4,1fr);}}
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.09);border-radius:3px;}
+::-webkit-scrollbar-thumb:hover{background:var(--primary-light);}
+::selection{background:rgba(255,107,53,.25);color:#fff;}
+@keyframes pulse-gold{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.3);opacity:.8}}
+@keyframes pulse-red{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.4);opacity:.7}}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-screen">
+  <div class="loading-container">
+    <div class="loading-ring"></div><div class="loading-ring"></div><div class="loading-ring"></div>
+    <div class="loading-core">⚡</div>
+  </div>
+  <div class="loading-text">نبض الشبكة</div>
+  <div class="loading-sub">NETPULSE SYSTEM</div>
+  <div class="loading-progress"><div class="loading-bar"></div></div>
+  <div class="loading-pct" id="loading-pct">0%</div>
+</div>
+
+<canvas id="particles-canvas"></canvas>
+
+<!-- LANDING -->
+<div id="landing-page">
+  <div class="landing-content">
+    <div class="landing-logo">⚡</div>
+    <h1 class="landing-title">نبض الشبكة</h1>
+    <p class="landing-subtitle">NETPULSE LIBYA</p>
+    <p class="landing-desc">المنصة الذكية المتقدمة لمراقبة وتحليل جودة شبكات الاتصالات والإنترنت في ليبيا — خريطة تفاعلية، تشخيص ذكي، وإحصائيات دقيقة.</p>
+    <button class="btn-primary" onclick="showRoleSelection()"><span>🚀</span> الدخول للنظام</button>
+    <div class="landing-features">
+      <div class="landing-feature"><span>🗺️</span><span>خريطة تفاعلية</span></div>
+      <div class="landing-feature"><span>🔍</span><span>تشخيص ذكي</span></div>
+      <div class="landing-feature"><span>📊</span><span>إحصائيات</span></div>
+      <div class="landing-feature"><span>📡</span><span>جودة التغطية</span></div>
+      <div class="landing-feature"><span>💬</span><span>نظام التذاكر</span></div>
+    </div>
+    <div class="landing-dev">
+      <div class="landing-dev-avatar">👨‍💻</div>
+      <div class="landing-dev-info">
+        <div class="landing-dev-name">وجد حسن الأزهري</div>
+        <div class="landing-dev-title">طالب في قسم الهندسة الكهربائية والإلكترونية - جامعة وادي الشاطئ</div>
+        <div class="landing-dev-email">wa.abdalsalam@wau.edu.ly</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ROLE SELECTION -->
+<div id="role-selection">
+  <button class="back-btn" onclick="showLanding()" style="position:absolute;top:20px;right:20px;">← رجوع</button>
+  <div style="text-align:center;margin-bottom:10px;">
+    <h2 style="font-size:26px;font-weight:900;background:linear-gradient(135deg,#fff,var(--gold-light));-webkit-background-clip:text;-webkit-text-fill-color:transparent;">اختر نوع الحساب</h2>
+    <p style="color:var(--text-muted);font-size:13px;margin-top:6px;">حدد طريقة استخدامك للنظام</p>
+  </div>
+  <div class="role-cards">
+    <div class="role-card user" onclick="showUserForm()">
+      <div class="role-card-icon">👤</div>
+      <h3>مستخدم</h3>
+      <p>أبلغ عن أعطال الشبكة، تشخيص المشاكل، وتابع التذاكر مع الشركات</p>
+    </div>
+    <div class="role-card company" onclick="showCompanyForm()">
+      <div class="role-card-icon">🏢</div>
+      <h3>شركة اتصال</h3>
+      <p>راقب البلاغات، رد على المستخدمين، وأدر الإعلانات والإشعارات</p>
+    </div>
+  </div>
+</div>
+
+<!-- USER FORM -->
+<div class="form-overlay" id="user-form">
+  <button class="back-btn" style="position:fixed;top:18px;right:18px;z-index:10;" onclick="showRoleSelection()">← رجوع</button>
+  <div class="form-container">
+    <div class="form-header"><h2>تسجيل المستخدم</h2><p>أدخل بياناتك للوصول إلى النظام</p></div>
+    <form onsubmit="handleUserRegister(event)">
+      <div class="form-group"><label>الاسم الكامل</label><input type="text" id="user-name" placeholder="أدخل اسمك الكامل" required></div>
+      <div class="form-group"><label>البريد الإلكتروني</label><input type="email" id="user-email" placeholder="example@email.com" required></div>
+      <div class="form-group">
+        <label>المدينة</label>
+        <div class="city-search-container">
+          <span class="city-search-icon">🔍</span>
+          <input type="text" class="city-search-input" id="user-city-search" placeholder="ابحث عن المدينة..." oninput="searchCity('user-city-search','user-city')" onfocus="showCityResults('user-city-search')" onblur="hideCityResultsDelayed('user-city-search')">
+          <div class="city-search-results" id="user-city-search-results"></div>
+        </div>
+        <select id="user-city" required style="margin-top:7px;"><option value="">اختر المدينة</option></select>
+      </div>
+      <div class="form-group"><label>المنطقة / الحي</label><select id="user-area" required><option value="">اختر المنطقة</option></select></div>
+      <button type="submit" class="form-submit">دخول النظام →</button>
+    </form>
+  </div>
+</div>
+
+<!-- COMPANY FORM -->
+<div class="form-overlay" id="company-form">
+  <button class="back-btn" style="position:fixed;top:18px;right:18px;z-index:10;" onclick="showRoleSelection()">← رجوع</button>
+  <div class="form-container">
+    <div class="form-header"><h2>تسجيل الشركة</h2><p>أدخل بيانات شركة الاتصال</p></div>
+    <form onsubmit="handleCompanyRegister(event)">
+      <div class="form-group"><label>اسم الشركة</label>
+        <select id="company-name" required>
+          <option value="">اختر الشركة</option>
+          <option value="ليبيانا">ليبيانا للهاتف المحمول</option>
+          <option value="المدار">المدار الجديد</option>
+          <option value="هاتف ليبيا">هاتف ليبيا</option>
+          <option value="ليبيا للاتصالات">ليبيا للاتصالات والتقنية</option>
+        </select>
+      </div>
+      <div class="form-group"><label>نوع الخدمة</label>
+        <select id="company-service" required>
+          <option value="">اختر نوع الخدمة</option>
+          <option value="جوال">شبكة جوال</option>
+          <option value="انترنت">إنترنت</option>
+          <option value="هاتف">هاتف أرضي</option>
+          <option value="fiber">فايبر</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>المنطقة الرئيسية</label>
+        <div class="city-search-container">
+          <span class="city-search-icon">🔍</span>
+          <input type="text" class="city-search-input" id="company-region-search" placeholder="ابحث عن المنطقة..." oninput="searchCity('company-region-search','company-region')" onfocus="showCityResults('company-region-search')" onblur="hideCityResultsDelayed('company-region-search')">
+          <div class="city-search-results" id="company-region-search-results"></div>
+        </div>
+        <select id="company-region" required style="margin-top:7px;"><option value="">اختر المنطقة</option></select>
+      </div>
+      <div class="form-group"><label>البريد الإلكتروني الرسمي</label><input type="email" id="company-email" placeholder="company@email.com" required></div>
+      <button type="submit" class="form-submit">دخول لوحة التحكم →</button>
+    </form>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app">
+  <!-- TOP BAR -->
+  <div class="top-bar">
+    <div class="top-bar-left">
+      <div class="top-bar-logo">⚡</div>
+      <div class="top-bar-title">نبض الشبكة</div>
+    </div>
+    <div class="top-bar-right">
+      <div class="top-bar-user" id="top-user-info">
+        <div class="top-bar-user-avatar">👤</div>
+        <span id="user-display-name">زائر</span>
+      </div>
+      <button class="notification-btn" onclick="toggleNotifications()">🔔<span class="notification-badge" id="notif-badge" style="display:none;">0</span></button>
+      <button class="logout-btn" onclick="logoutUser()" title="تسجيل الخروج">🚪</button>
+    </div>
+  </div>
+
+  <!-- NOTIFICATION PANEL -->
+  <div class="notification-panel" id="notification-panel">
+    <div class="notification-header">
+      <h4>🔔 الإشعارات</h4>
+      <button onclick="toggleNotifications()" style="background:none;border:none;color:var(--text-muted);cursor:pointer;font-size:17px;">✕</button>
+    </div>
+    <div class="notification-list" id="notification-list"><p style="text-align:center;color:var(--text-muted);padding:18px;font-size:13px;">لا توجد إشعارات</p></div>
+  </div>
+
+  <!-- MAP -->
+  <div class="map-container active" id="map-container">
+    <div id="map"></div>
+  </div>
+
+  <!-- MAP FLY OVERLAY -->
+  <div id="map-fly-overlay"></div>
+
+  <!-- MAP OVERLAY BTNS -->
+  <div class="map-overlay-btns active" id="map-overlay-btns">
+    <button class="map-overlay-btn" onclick="locateUser()">📍<span class="tooltip">تحديد موقعي</span></button>
+    <button class="map-overlay-btn" id="btn-coverage" onclick="toggleCoverageMode()">📡<span class="tooltip">وضع التغطية</span></button>
+    <button class="map-overlay-btn" id="btn-heatmap" onclick="toggleHeatmap()">🔥<span class="tooltip">خريطة الحرارة</span></button>
+    <button class="map-overlay-btn" onclick="toggleLayers()">🗂️<span class="tooltip">طبقات الخريطة</span></button>
+  </div>
+
+  <!-- COVERAGE PANEL -->
+  <div class="coverage-panel-section" id="coverage-panel">
+    <button class="back-btn" style="margin-bottom:12px;" onclick="closeCoveragePanel()">← إغلاق</button>
+    <div class="section-header"><h2>📡 جودة التغطية</h2><p id="coverage-city-name">معلومات التغطية</p></div>
+    <div id="coverage-content"></div>
+  </div>
+
+  <!-- REPORT SECTION -->
+  <div class="section" id="report-section">
+    <div class="section-header"><h2>🚨 الإبلاغ عن عطل</h2><p>أبلغ عن مشكلة في شبكة الاتصال</p></div>
+    <div class="glass-card">
+      <h3><span>📱</span> اختر الجهاز</h3>
+      <div class="device-grid" id="device-grid"></div>
+    </div>
+    <div class="glass-card">
+      <h3><span>🏢</span> شركة الاتصال</h3>
+      <div class="form-group" style="margin-bottom:0;">
+        <select id="report-company" required>
+          <option value="">اختر شركة الاتصال</option>
+          <option value="ليبيانا">ليبيانا للهاتف المحمول</option>
+          <option value="المدار">المدار الجديد</option>
+          <option value="هاتف ليبيا">هاتف ليبيا</option>
+          <option value="ليبيا للاتصالات">ليبيا للاتصالات والتقنية</option>
+        </select>
+      </div>
+    </div>
+    <div class="glass-card">
+      <h3><span>📍</span> الموقع</h3>
+      <div class="form-group">
+        <label>المدينة</label>
+        <div class="city-search-container">
+          <span class="city-search-icon">🔍</span>
+          <input type="text" class="city-search-input" id="report-city-search" placeholder="ابحث عن المدينة..." oninput="searchCity('report-city-search','report-city')" onfocus="showCityResults('report-city-search')" onblur="hideCityResultsDelayed('report-city-search')">
+          <div class="city-search-results" id="report-city-search-results"></div>
+        </div>
+        <select id="report-city" required style="margin-top:7px;"><option value="">اختر المدينة</option></select>
+      </div>
+      <div class="form-group">
+        <label>المنطقة / الحي</label>
+        <select id="report-area" required><option value="">اختر المنطقة</option></select>
+      </div>
+      <div class="form-group" style="margin-bottom:0;">
+        <label>ملاحظات إضافية (اختياري)</label>
+        <textarea id="report-notes" placeholder="أضف أي تفاصيل إضافية..."></textarea>
+      </div>
+    </div>
+    <div class="glass-card">
+      <h3><span>⚠️</span> اختر الأعراض</h3>
+      <div class="symptoms-grid" id="symptoms-grid"></div>
+    </div>
+    <button class="form-submit" onclick="submitReport()" style="margin-bottom:20px;">📤 إرسال البلاغ</button>
+  </div>
+
+  <!-- DIAGNOSIS SECTION -->
+  <div class="section" id="diagnosis-section">
+    <div class="section-header"><h2>🔍 التشخيص الذكي</h2><p>أدخل الأعراض للحصول على تشخيص دقيق</p></div>
+    <div class="glass-card">
+      <h3><span>📱</span> اختر الجهاز</h3>
+      <div class="device-grid" id="diag-device-grid"></div>
+    </div>
+    <div class="glass-card">
+      <h3><span>🏢</span> شركة الاتصال</h3>
+      <div class="form-group" style="margin-bottom:0;">
+        <select id="diag-company" required>
+          <option value="">اختر شركة الاتصال</option>
+          <option value="ليبيانا">ليبيانا</option>
+          <option value="المدار">المدار الجديد</option>
+          <option value="هاتف ليبيا">هاتف ليبيا</option>
+          <option value="ليبيا للاتصالات">ليبيا للاتصالات</option>
+        </select>
+      </div>
+    </div>
+    <div class="glass-card">
+      <h3><span>⚠️</span> الأعراض الظاهرة</h3>
+      <div class="symptoms-grid" id="diag-symptoms-grid"></div>
+    </div>
+    <button class="form-submit" onclick="runDiagnosis()" style="margin-bottom:14px;">🔬 تشخيص العطل</button>
+    <div id="diagnosis-result-container"></div>
+  </div>
+
+  <!-- STATS SECTION -->
+  <div class="section" id="stats-section">
+    <div class="section-header"><h2>📊 الإحصائيات</h2><p>تحليل البلاغات بشكل مرئي</p></div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-card-icon" style="background:rgba(255,107,53,.14);color:var(--primary);">📋</div><div class="stat-card-value" id="stat-total">0</div><div class="stat-card-label">إجمالي البلاغات</div></div>
+      <div class="stat-card"><div class="stat-card-icon" style="background:rgba(255,68,68,.14);color:var(--danger);">🚨</div><div class="stat-card-value" id="stat-active">0</div><div class="stat-card-label">بلاغات نشطة</div></div>
+      <div class="stat-card"><div class="stat-card-icon" style="background:rgba(0,176,255,.14);color:var(--info);">🏢</div><div class="stat-card-value" id="stat-companies">4</div><div class="stat-card-label">شركات مراقبة</div></div>
+      <div class="stat-card"><div class="stat-card-icon" style="background:rgba(0,200,83,.14);color:var(--success);">✅</div><div class="stat-card-value" id="stat-resolved">0</div><div class="stat-card-label">تم حلها</div></div>
+    </div>
+    <div class="chart-container"><h4>📈 البلاغات حسب الشركة</h4><div class="chart-wrapper"><canvas id="chart-companies"></canvas></div></div>
+    <div class="chart-container"><h4>⚠️ أكثر الأعطال تكراراً</h4><div class="chart-wrapper"><canvas id="chart-faults"></canvas></div></div>
+    <div class="chart-container"><h4>📱 البلاغات حسب الجهاز</h4><div class="chart-wrapper"><canvas id="chart-devices"></canvas></div></div>
+    <div class="chart-container"><h4>📍 البلاغات حسب المنطقة</h4><div class="chart-wrapper"><canvas id="chart-areas"></canvas></div></div>
+  </div>
+
+  <!-- ABOUT SECTION -->
+  <div class="section" id="about-section">
+    <div class="section-header"><h2>ℹ️ عن النظام</h2><p>معلومات حول نبض الشبكة</p></div>
+    <div class="glass-card">
+      <h3><span>⚡</span> ما هو نبض الشبكة؟</h3>
+      <p style="font-size:14px;line-height:1.9;color:var(--text-secondary);">نبض الشبكة (NetPulse) هو نظام ذكي متقدم لمراقبة وتحليل جودة شبكات الاتصالات والإنترنت في ليبيا. يتيح للمستخدمين الإبلاغ عن الأعطال، تشخيص المشاكل، والاطلاع على جودة التغطية في مختلف المناطق. كما يوفر لوحة تحكم احترافية لشركات الاتصال لمتابعة البلاغات وتحليل الأداء.</p>
+    </div>
+    <div class="glass-card">
+      <h3><span>✨</span> المميزات الرئيسية</h3>
+      <ul class="feature-list">
+        <li><span class="check">✓</span> خريطة تفاعلية حية بتقنية 3D لجميع مناطق ليبيا</li>
+        <li><span class="check">✓</span> نظام تشخيص ذكي لأعطال الشبكات مع نسب احتمالية</li>
+        <li><span class="check">✓</span> إحصائيات وتحليلات بصرية متقدمة</li>
+        <li><span class="check">✓</span> معلومات دقيقة عن جودة التغطية لجميع الشركات</li>
+        <li><span class="check">✓</span> دعم جميع شركات الاتصال الليبية</li>
+        <li><span class="check">✓</span> إشعارات لحظية للبلاغات الجديدة</li>
+        <li><span class="check">✓</span> واجهة سهلة الاستخدام على جميع الأجهزة</li>
+        <li><span class="check">✓</span> حماية البيانات وخصوصية المستخدمين</li>
+      </ul>
+    </div>
+    <div class="glass-card">
+      <h3><span>📖</span> كيفية الاستخدام</h3>
+      <div class="howto-step">
+        <div class="howto-num">1</div>
+        <div class="howto-text">سجل دخولك كمستخدم أو شركة اتصال</div>
+      </div>
+      <div class="howto-step">
+        <div class="howto-num">2</div>
+        <div class="howto-text">استخدم الخريطة لمعرفة جودة التغطية</div>
+      </div>
+      <div class="howto-step">
+        <div class="howto-num">3</div>
+        <div class="howto-text">أبلغ عن أي عطل بخطوات بسيطة</div>
+      </div>
+      <div class="howto-step">
+        <div class="howto-num">4</div>
+        <div class="howto-text">استخدم نظام التشخيص لمعرفة سبب المشكلة</div>
+      </div>
+      <div class="howto-step">
+        <div class="howto-num">5</div>
+        <div class="howto-text">تابع الإحصائيات والتحليلات المحدثة</div>
+      </div>
+    </div>
+    <!-- Developer Section -->
+    <div class="developer-section">
+      <div class="developer-avatar">👨‍💻</div>
+      <div class="developer-name">وجد حسن الأزهري</div>
+      <div class="developer-title">طالب في قسم الهندسة الكهربائية والإلكترونية<br>جامعة وادي الشاطئ</div>
+      <div class="developer-projects">
+        <div class="developer-project">
+          <div class="developer-project-icon" style="background:rgba(255,107,53,.14);color:var(--primary);">⚡</div>
+          <div class="developer-project-info"><h5>نبض الشبكة — NetPulse Libya</h5><p>منصة مراقبة شبكات الاتصالات في ليبيا</p></div>
+        </div>
+        <div class="developer-project">
+          <div class="developer-project-icon" style="background:rgba(0,176,255,.14);color:var(--info);">🏥</div>
+          <div class="developer-project-info"><h5>نظام تشخيص ذكي للأعطال الإلكترونية</h5><p>نظام متقدم للتشخيص باستخدام الذكاء الاصطناعي</p></div>
+        </div>
+        <div class="developer-project">
+          <div class="developer-project-icon" style="background:rgba(0,200,83,.14);color:var(--success);">📚</div>
+          <div class="developer-project-info"><h5>موقع مكتبتي الإلكتروني</h5><p>منصة رقمية متكاملة للمكتبات الأكاديمية</p></div>
+        </div>
+      </div>
+      <div style="text-align:center;margin-top:14px;font-size:11px;color:var(--text-muted);">البريد: <span dir="ltr">wa.abdalsalam@wau.edu.ly</span></div>
+    </div>
+  </div>
+
+  <!-- COMPANY SECTION -->
+  <div class="section" id="company-section">
+    <div class="section-header"><h2>🏢 لوحة التحكم</h2><p>إدارة البلاغات والتواصل مع المستخدمين</p></div>
+    <div class="dashboard-header">
+      <div class="dashboard-header-icon">🏢</div>
+      <div class="dashboard-header-info"><h3 id="company-display-name">شركة الاتصال</h3><p id="company-display-service">نوع الخدمة</p></div>
+    </div>
+    <div class="stats-grid">
+      <div class="stat-card"><div class="stat-card-icon" style="background:rgba(255,68,68,.14);color:var(--danger);">🚨</div><div class="stat-card-value" id="company-stat-total">0</div><div class="stat-card-label">إجمالي البلاغات</div></div>
+      <div class="stat-card"><div class="stat-card-icon" style="background:rgba(255,179,0,.14);color:var(--warning);">⏳</div><div class="stat-card-value" id="company-stat-pending">0</div><div class="stat-card-label">قيد الانتظار</div></div>
+      <div class="stat-card"><div class="stat-card-icon" style="background:rgba(0,200,83,.14);color:var(--success);">✅</div><div class="stat-card-value" id="company-stat-resolved">0</div><div class="stat-card-label">تم حلها</div></div>
+      <div class="stat-card"><div class="stat-card-icon" style="background:rgba(0,176,255,.14);color:var(--info);">📍</div><div class="stat-card-value" id="company-stat-areas">0</div><div class="stat-card-label">مناطق متأثرة</div></div>
+    </div>
+    <div class="dashboard-tabs">
+      <button class="dashboard-tab active" onclick="switchTab('reports')">📋 البلاغات الواردة</button>
+      <button class="dashboard-tab" onclick="switchTab('announcements')">📢 الإعلانات</button>
+      <button class="dashboard-tab" onclick="switchTab('analytics')">📊 التحليلات</button>
+    </div>
+    <div id="tab-reports">
+      <div class="glass-card">
+        <h3><span>🚨</span> البلاغات والتذاكر</h3>
+        <div id="company-tickets"></div>
+      </div>
+    </div>
+    <div id="tab-announcements" style="display:none;">
+      <div class="glass-card">
+        <h3><span>📢</span> إضافة إعلان جديد</h3>
+        <div class="form-group"><label>عنوان الإعلان</label><input type="text" id="ann-title" placeholder="عنوان الإعلان..."></div>
+        <div class="form-group"><label>محتوى الإعلان</label><textarea id="ann-body" placeholder="اكتب محتوى الإعلان هنا..."></textarea></div>
+        <button class="form-submit" onclick="postAnnouncement()" style="margin-top:8px;">📤 نشر الإعلان</button>
+      </div>
+      <div class="glass-card">
+        <h3><span>📋</span> الإعلانات المنشورة</h3>
+        <div id="announcements-list"></div>
+      </div>
+    </div>
+    <div id="tab-analytics" style="display:none;">
+      <div class="chart-container"><h4>📈 البلاغات حسب المنطقة</h4><div class="chart-wrapper"><canvas id="chart-company-areas"></canvas></div></div>
+      <div class="chart-container"><h4>⚠️ البلاغات حسب نوع العطل</h4><div class="chart-wrapper"><canvas id="chart-company-faults"></canvas></div></div>
+    </div>
+  </div>
+
+  <!-- USER TICKETS SECTION -->
+  <div class="section" id="tickets-section">
+    <div class="section-header"><h2>📬 تذاكري</h2><p>متابعة البلاغات المرسلة والردود</p></div>
+    <div id="user-tickets-list"></div>
+  </div>
+
+  <!-- BOTTOM NAV -->
+  <div class="bottom-nav" id="bottom-nav">
+    <button class="nav-item active" onclick="showSection('map',this)"><span class="nav-icon">🗺️</span><span class="nav-label">الخريطة</span></button>
+    <button class="nav-item" onclick="showSection('report',this)"><span class="nav-icon">🚨</span><span class="nav-label">إبلاغ</span></button>
+    <button class="nav-item" onclick="showSection('diagnosis',this)"><span class="nav-icon">🔍</span><span class="nav-label">تشخيص</span></button>
+    <button class="nav-item" onclick="showSection('stats',this)"><span class="nav-icon">📊</span><span class="nav-label">إحصائيات</span></button>
+    <button class="nav-item" onclick="showSection('about',this)"><span class="nav-icon">ℹ️</span><span class="nav-label">عن النظام</span></button>
+  </div>
+</div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<script>
+// =================== DATA ===================
+const libyaData = {
+  cities: {
+    "طرابلس": ["سوق الجمعة","أبو سليم","تاجوراء","عين زارة","حي الأندلس","قرجي","الهضبة","الزاوية الغربية","الحرشة","المطرد","السواحل","الفرناج","الظهرة","الدريبي","السبعة","أبو سليم","صلاح الدين","سيدي خليفة","عزيزية","غوط الشعال","الكريمية","البصرة","السراج","طريق الشط","الجديدة","الأندلس"],
+    "بنغازي": ["الليثي","السلماني","الكيش","بوعطني","الهواري","القوارشة","البركة","الفويهات","العروبة","الصابري","الحديدة","سيدي خليفة","الكويفية","الفندق","الشريف","العمارات","سيدي حسين","الوسيطة"],
+    "الزاوية": ["صرمان","صبراتة","الجميل","الطويلة","دحمان","زواغة","سيدي معروف","رأس الديوان","زوارة","أبو كماش","رأس جدير","العسة","زلطن"],
+    "مصراتة": ["طمينة","الدافنية","قصر أحمد","زروق","الغيران","وسط المدينة","الزعفران","السراج"],
+    "غريان": ["القواسم","تغسات","بني نصير","الأصابعة","مزدة"],
+    "درنة": ["باب طبرق","المغار","الفتايح","شيحا الشرقية","شيحا الغربية"],
+    "طبرق": ["إمساعد","البردي","عين الغزالة","كمبوت","القعرة"],
+    "شحات": ["وسط المدينة","الوسط","مسة","مراوة","الساحل"],
+    "البيضاء": ["سيدي حسين","الوسيطة","الكويفية","السالم","الشعاب"],
+    "سرت": ["الجيزة البحرية","بوهادي","الهيشة","السواوة","أبوقرين"],
+    "الخمس": ["زليتن","القره بوللي","مسلاتة","سوق الخميس","بني وليد"],
+    "سبها": ["المنشية","القرضة","الجديد","حجارة","سكرة","العزيزية","الناصرية","الكويفية"],
+    "وادي الشاطئ": ["براك الشاطئ","القيرة","المحروقة","بنت بية","زلاف","أقار","ققم","تامزاوة","الراس","العيون","الديسة","القرضة","تاروت","برقن","قُطة","الزهرة","ونزريك","المجدول","الزعفران","حي الصفر","حي المشاشية"],
+    "براك الشاطئ": ["براك","الشاطئ","الصحراء","الغريفة","حي الصفر"],
+    "مرزق": ["تراغن","زويلة","القطرون","أم الأرانب","الفقها"],
+    "أوباري": ["جرمة","إدري","الفجيج","الغريفة","تمنهنت"],
+    "غات": ["العوينات","تهالا","البركت","إيسين","تاندرارت"],
+    "الكفرة": ["تازربو","ربيانة","الهواري","جالو","العوينات"],
+    "الجفرة": ["هون","ودان","سوكنة","الحراج"],
+    "هون": ["وسط المدينة","الجفرة","الواحات","الصحراء"],
+    "الزنتان": ["وسط المدينة","الجبل","الكيكلة","الحشاشين"],
+    "يفرن": ["وسط المدينة","الجبل","الزاوية","القلعة"],
+    "نالوت": ["وسط المدينة","الجبل","التيجي","الدرج"],
+    "غدامس": ["وسط المدينة","الواحات","أشكدا","ضرو"],
+    "تمنهنت": ["وسط المدينة","الصحراء","الغريفة"],
+    "بني وليد": ["وسط المدينة","الجبل","الحمادة"],
+    "ترهونة": ["وسط المدينة","السهل","القويعة"],
+  }
+};
+
+const devices = [
+  {id:"iphone",name:"iPhone",icon:"📱"},{id:"samsung",name:"Samsung",icon:"📱"},
+  {id:"xiaomi",name:"Xiaomi",icon:"📱"},{id:"huawei",name:"Huawei",icon:"📱"},
+  {id:"oppo",name:"Oppo",icon:"📱"},{id:"realme",name:"Realme",icon:"📱"},
+  {id:"nokia",name:"Nokia",icon:"📱"},{id:"tecno",name:"Tecno",icon:"📱"},
+  {id:"infinix",name:"Infinix",icon:"📱"},{id:"honor",name:"Honor",icon:"📱"},
+  {id:"vivo",name:"Vivo",icon:"📱"},{id:"oneplus",name:"OnePlus",icon:"📱"},
+  {id:"google",name:"Pixel",icon:"📱"},{id:"motorola",name:"Motorola",icon:"📱"},
+  {id:"lenovo",name:"Lenovo",icon:"💻"},{id:"dell",name:"Dell",icon:"💻"},
+  {id:"hp",name:"HP",icon:"💻"},{id:"macbook",name:"MacBook",icon:"💻"},
+  {id:"ipad",name:"iPad",icon:"📱"},{id:"tablet",name:"Tablet",icon:"📱"},
+  {id:"router",name:"راوتر WiFi",icon:"📡"},{id:"modem",name:"مودم USB",icon:"📡"},
+  {id:"landline",name:"هاتف أرضي",icon:"☎️"},{id:"other",name:"جهاز آخر",icon:"🔌"}
+];
+
+const symptoms = [
+  "انقطاع الشبكة بالكامل","ضعف الإشارة (شريط واحد)","ضعف الإشارة (شريطين)",
+  "عدم القدرة على إجراء مكالمات","تشويش في المكالمات","انقطاع المكالمات",
+  "عدم القدرة على إرسال رسائل SMS","تأخر وصول الرسائل","بطء شديد في الإنترنت",
+  "عدم فتح المواقع","عدم تشغيل تطبيقات التواصل","انقطاع الواي فاي",
+  "ضعف سرعة الواي فاي","عدم الاتصال بالشبكة 4G","عدم الاتصال بالشبكة 3G",
+  "ظهور شبكة 2G فقط","تقطع الاتصال المتكرر","ارتفاع درجة حرارة الجهاز",
+  "استنزاف سريع للبطارية","عدم ظهور اسم الشبكة","ظهور رسالة 'لا توجد خدمة'",
+  "ظهور رسالة 'شبكة محظورة'","عدم القدرة على التجوال","تشويش في الصوت",
+  "عدم وصول المكالمات الواردة","انقطاع الإنترنت في الليل","بطء في تحميل الملفات",
+  "عدم القدرة على إجراء مكالمات فيديو","تأخر في استقبال الإشعارات","ضعف الإشارة داخل المباني",
+  "استنزاف الرصيد بدون استخدام","ارتفاع ping في الألعاب","صدى الصوت أثناء المكالمة",
+  "عدم القدرة على استخدام GPS","بطء الشبكة في أوقات الذروة"
+];
+
+const diagnosisDB = {
+  "انقطاع الشبكة بالكامل": {
+    causes: [{name:"عطل في برج الاتصال القريب",p:85},{name:"صيانة دورية من الشركة",p:70},{name:"انقطاع التيار عن البرج",p:60},{name:"عطل في كوابل الألياف الضوئية",p:45}],
+    recs: ["تحقق من إشعارات الشركة","أعد تشغيل الجهاز 5 دقائق","تحقق من عدم وجود حظر","جرب شريحة أخرى","اتصل بدعم الشركة"]
+  },
+  "ضعف الإشارة (شريط واحد)": {
+    causes: [{name:"بعد المسافة عن أقرب برج",p:90},{name:"عوائق طبيعية وجبال",p:75},{name:"ازدحام الشبكة",p:65},{name:"عطل جزئي في البرج",p:40}],
+    recs: ["انتقل لمكان مرتفع أو نافذة","استخدم وضع الطيران 10 ثوان","جرب شبكة 3G بدلاً من 4G","أبلغ الشركة عن ضعف التغطية"]
+  },
+  "بطء شديد في الإنترنت": {
+    causes: [{name:"استنفاد باقة الإنترنت",p:85},{name:"ازدحام الشبكة في المنطقة",p:70},{name:"ضعف إشارة 4G",p:60},{name:"مشكلة في APN",p:45}],
+    recs: ["تأكد من عدم انتهاء الباقة","أعد ضبط إعدادات APN","انتقل لوضع 3G مؤقتاً","أغلق التطبيقات في الخلفية"]
+  },
+  "انقطاع الواي فاي": {
+    causes: [{name:"عطل في الراوتر",p:75},{name:"تعارض IP",p:60},{name:"تداخل قنوات WiFi",p:55},{name:"مشكلة في كابل الإنترنت",p:40}],
+    recs: ["أعد تشغيل الراوتر (فصل 30 ثانية)","غيّر قناة WiFi إلى 1 أو 6 أو 11","استخدم Ethernet مؤقتاً","اتصل بشركة الإنترنت"]
+  },
+  "عدم القدرة على إجراء مكالمات": {
+    causes: [{name:"انتهاء الرصيد",p:80},{name:"حظر المكالمات الصادرة",p:65},{name:"عطل في مركز التبديل",p:50},{name:"مشكلة في بطاقة SIM",p:40}],
+    recs: ["تأكد من وجود رصيد كافٍ","تحقق من إعدادات حظر المكالمات","أخرج الشريحة وأعد إدخالها","اتصل بدعم الشركة"]
+  }
+};
+
+const defaultDiagnosis = {
+  causes: [{name:"مشكلة غير محددة في الشبكة",p:55},{name:"قد يكون السبب برمجياً",p:40},{name:"تأثيرات بيئية خارجية",p:30}],
+  recs: ["أعد تشغيل الجهاز","تحقق من تحديثات النظام","جرب الشريحة في جهاز آخر","اتصل بدعم الشركة"]
+};
+
+const coverageData = {
+  "طرابلس": {"ليبيانا":{s:96,t:"4G+/5G",n:"تغطية ممتازة. 5G متاح في المناطق الرئيسية."},"المدار":{s:93,t:"4G+",n:"تغطية جيدة جداً. تحسن مستمر."},"هاتف ليبيا":{s:89,t:"4G",n:"تغطية جيدة في وسط المدينة."},"ليبيا للاتصالات":{s:91,t:"Fiber/4G+",n:"فايبر ممتاز في المناطق الرئيسية."}},
+  "بنغازي": {"ليبيانا":{s:94,t:"4G+/5G",n:"تغطية ممتازة. 5G في المناطق الرئيسية."},"المدار":{s:91,t:"4G+",n:"استقرار عالٍ في معظم الأحياء."},"هاتف ليبيا":{s:86,t:"4G",n:"تحسن ملحوظ في الفترة الأخيرة."},"ليبيا للاتصالات":{s:88,t:"Fiber/4G",n:"فايبر في المناطق الرئيسية."}},
+  "وادي الشاطئ": {"ليبيانا":{s:52,t:"3G/2G",n:"تغطية ضعيفة. الشبكة تختفي بعد 15 كم. مركزة في براك والقيرة."},"المدار":{s:50,t:"3G/2G",n:"تغطية ضعيفة في معظم المناطق."},"هاتف ليبيا":{s:44,t:"2G",n:"تغطية محدودة جداً. وسط المدينة فقط."},"ليبيا للاتصالات":{s:47,t:"3G",n:"تغطية ضعيفة."}},
+  "براك الشاطئ": {"ليبيانا":{s:62,t:"3G/4G",n:"تغطية متوسطة في وسط براك. تضعف جنوباً."},"المدار":{s:60,t:"3G",n:"تغطية متوسطة. بعض التقطعات."},"هاتف ليبيا":{s:54,t:"3G",n:"تغطية ضعيفة."},"ليبيا للاتصالات":{s:57,t:"3G",n:"تغطية متوسطة."}},
+  "سبها": {"ليبيانا":{s:79,t:"4G/3G",n:"تغطية جيدة وسط المدينة. ضعف في المناطق الجنوبية."},"المدار":{s:76,t:"4G/3G",n:"تغطية متوسطة."},"هاتف ليبيا":{s:71,t:"3G",n:"تغطية محدودة."},"ليبيا للاتصالات":{s:73,t:"4G/3G",n:"تغطية متوسطة."}},
+  "مرزق": {"ليبيانا":{s:58,t:"3G/2G",n:"تغطية ضعيفة. وسط المدينة فقط."},"المدار":{s:55,t:"3G",n:"تغطية ضعيفة."},"هاتف ليبيا":{s:48,t:"2G",n:"تغطية شبه معدومة."},"ليبيا للاتصالات":{s:51,t:"3G",n:"تغطية محدودة."}},
+  "غات": {"ليبيانا":{s:42,t:"2G",n:"تغطية شبه معدومة."},"المدار":{s:37,t:"2G",n:"تغطية ضعيفة جداً."},"هاتف ليبيا":{s:32,t:"2G",n:"شبه غير متوفر."},"ليبيا للاتصالات":{s:34,t:"2G",n:"تغطية محدودة جداً."}},
+  "الكفرة": {"ليبيانا":{s:48,t:"3G/2G",n:"تغطية محدودة. وسط الكفرة فقط."},"المدار":{s:44,t:"3G/2G",n:"تغطية ضعيفة."},"هاتف ليبيا":{s:38,t:"2G",n:"تغطية شبه معدومة."},"ليبيا للاتصالات":{s:41,t:"3G",n:"تغطية محدودة."}},
+  "أوباري": {"ليبيانا":{s:67,t:"3G/4G",n:"تغطية متوسطة في وسط المدينة."},"المدار":{s:64,t:"3G",n:"تغطية متوسطة."},"هاتف ليبيا":{s:60,t:"3G",n:"تغطية ضعيفة."},"ليبيا للاتصالات":{s:62,t:"3G",n:"تغطية متوسطة."}}
+};
+
+const defaultCoverage = {"ليبيانا":{s:78,t:"4G/3G",n:"تغطية جيدة في المناطق الحضرية."},"المدار":{s:76,t:"4G/3G",n:"تغطية جيدة. تقطعات في المناطق البعيدة."},"هاتف ليبيا":{s:70,t:"4G/3G",n:"تغطية متوسطة."},"ليبيا للاتصالات":{s:73,t:"Fiber/4G",n:"تغطية جيدة. فايبر في المناطق الرئيسية."}};
+
+const cityCoords = {
+  "طرابلس":[32.8872,13.1913],"بنغازي":[32.1167,20.0667],"مصراتة":[32.3754,15.0925],
+  "الزاوية":[32.7574,12.7279],"سبها":[27.0377,14.4283],"البيضاء":[32.7628,21.7550],
+  "درنة":[32.7649,22.6391],"طبرق":[32.0803,23.9814],"الخمس":[32.6486,14.2619],
+  "زليتن":[32.4674,14.5687],"سرت":[31.2092,16.5887],"الكفرة":[24.1833,23.3167],
+  "غات":[24.9647,10.1808],"أوباري":[26.5942,12.7800],"مرزق":[25.9135,13.9184],
+  "وادي الشاطئ":[27.5000,14.5000],"براك الشاطئ":[27.5000,14.5000],"هون":[29.1167,15.9333],
+  "الزنتان":[31.9333,12.2500],"يفرن":[32.0633,12.5000],"نالوت":[31.8683,10.9814],
+  "غدامس":[30.1333,9.5000],"الأبيار":[32.1900,20.6000],"شحات":[32.1833,20.5667],
+  "المرج":[32.5000,20.8333],"الجفرة":[29.2000,16.0000],"غريان":[32.1761,13.0050],
+  "الجغبوب":[29.7500,24.5167],"توكرة":[32.5333,20.5667],"تمنهنت":[29.1167,17.6167],
+  "بني وليد":[31.7667,13.9833],"ترهونة":[32.4333,13.6333]
+};
+
+// Fake demo reports for company dashboard
+const fakeCompanyReports = [
+  {id:1001,device:"Samsung",company:"ليبيانا",city:"طرابلس",area:"سوق الجمعة",symptoms:["انقطاع الشبكة بالكامل","بطء شديد في الإنترنت"],notes:"الانقطاع مستمر منذ الصباح",date:"2024/12/15 08:30",status:"pending",userName:"أحمد محمد",replies:[]},
+  {id:1002,device:"iPhone",company:"ليبيانا",city:"بنغازي",area:"الليثي",symptoms:["ضعف الإشارة (شريط واحد)","تقطع الاتصال المتكرر"],notes:"",date:"2024/12/15 09:15",status:"replied",userName:"فاطمة العمر",replies:[{from:"company",text:"نعمل على حل المشكلة، يُرجى الانتظار",time:"2024/12/15 10:00"}]},
+  {id:1003,device:"Huawei",company:"المدار",city:"مصراتة",area:"الغيران",symptoms:["عدم الاتصال بالشبكة 4G"],notes:"المشكلة منذ 3 أيام",date:"2024/12/14 14:00",status:"pending",userName:"خالد الطاهر",replies:[]},
+  {id:1004,device:"Xiaomi",company:"هاتف ليبيا",city:"سبها",area:"المنشية",symptoms:["بطء شديد في الإنترنت","ضعف الإشارة (شريطين)"],notes:"",date:"2024/12/14 16:30",status:"pending",userName:"مريم بن علي",replies:[]},
+  {id:1005,device:"راوتر WiFi",company:"ليبيا للاتصالات",city:"طرابلس",area:"حي الأندلس",symptoms:["انقطاع الواي فاي","عدم فتح المواقع"],notes:"الراوتر يعمل لكن لا إنترنت",date:"2024/12/13 11:00",status:"closed",userName:"عمر الفيتوري",replies:[{from:"company",text:"تم حل المشكلة من جانبنا",time:"2024/12/14 09:00"}]},
+  {id:1006,device:"Samsung",company:"ليبيانا",city:"وادي الشاطئ",area:"براك الشاطئ",symptoms:["انقطاع الشبكة بالكامل","ظهور رسالة 'لا توجد خدمة'"],notes:"لا توجد تغطية على الإطلاق",date:"2024/12/15 07:00",status:"pending",userName:"سالم الورفلي",replies:[]},
+  {id:1007,device:"iPhone",company:"ليبيانا",city:"درنة",area:"باب طبرق",symptoms:["تشويش في المكالمات","عدم وصول المكالمات الواردة"],notes:"",date:"2024/12/15 10:45",status:"pending",userName:"نور الهدى",replies:[]},
+  {id:1008,device:"Tecno",company:"المدار",city:"الكفرة",area:"الهواري",symptoms:["انقطاع الشبكة بالكامل"],notes:"لا توجد تغطية في الكفرة",date:"2024/12/12 08:00",status:"replied",userName:"إبراهيم التبو",replies:[{from:"company",text:"نحن نعمل على توسيع التغطية في المنطقة الجنوبية",time:"2024/12/13 12:00"}]}
+];
+
+let reports = [];
+let userReports = [];
+let announcements = [];
+let currentUser = null, currentCompany = null;
+let map = null, markers = [];
+let coverageMode = false;
+let selectedDevice = null, selectedSymptoms = [];
+let selectedDiagDevice = null, selectedDiagSymptoms = [];
+let notifications = [];
+let chartInstances = {};
+let lastReportCoords = null; // For map fly animation tracking
+
+// =================== INIT ===================
+document.addEventListener('DOMContentLoaded', function(){
+  initParticles();
+  let pct = 0;
+  const el = document.getElementById('loading-pct');
+  const iv = setInterval(() => {
+    pct += Math.floor(Math.random()*18)+5;
+    if(pct >= 100){ pct=100; clearInterval(iv); }
+    if(el) el.textContent = pct+'%';
+  }, 200);
+  setTimeout(() => document.getElementById('loading-screen').classList.add('hidden'), 2800);
+  populateCities();
+  populateDevices();
+  populateSymptoms();
+  checkSavedLogin();
+  const saved = localStorage.getItem('netpulse_announcements');
+  if(saved) announcements = JSON.parse(saved);
+});
+
+// =================== SAVED LOGIN ===================
+function checkSavedLogin(){
+  const u = localStorage.getItem('netpulse_user');
+  const c = localStorage.getItem('netpulse_company');
+  const ur = localStorage.getItem('netpulse_user_reports');
+  if(ur) userReports = JSON.parse(ur);
+  if(u){
+    currentUser = JSON.parse(u);
+    document.getElementById('user-display-name').textContent = currentUser.name;
+    document.getElementById('landing-page').classList.add('hidden');
+    document.getElementById('main-app').classList.add('active');
+    initMap();
+    showToast('مرحباً بعودتك ' + currentUser.name + '!', 'success');
+  } else if(c){
+    currentCompany = JSON.parse(c);
+    document.getElementById('user-display-name').textContent = currentCompany.name;
+    document.getElementById('landing-page').classList.add('hidden');
+    document.getElementById('main-app').classList.add('active');
+    setupCompanyNav();
+    initMap();
+    showToast('مرحباً بعودتك ' + currentCompany.name + '!', 'success');
+  }
+}
+
+function logoutUser(){
+  if(!confirm('هل تريد تسجيل الخروج؟')) return;
+  currentUser = null;
+  currentCompany = null;
+  localStorage.removeItem('netpulse_user');
+  localStorage.removeItem('netpulse_company');
+  if(map){ map.remove(); map = null; markers = []; }
+  document.getElementById('main-app').classList.remove('active');
+  document.getElementById('bottom-nav').innerHTML = `
+    <button class="nav-item active" onclick="showSection('map',this)"><span class="nav-icon">🗺️</span><span class="nav-label">الخريطة</span></button>
+    <button class="nav-item" onclick="showSection('report',this)"><span class="nav-icon">🚨</span><span class="nav-label">إبلاغ</span></button>
+    <button class="nav-item" onclick="showSection('diagnosis',this)"><span class="nav-icon">🔍</span><span class="nav-label">تشخيص</span></button>
+    <button class="nav-item" onclick="showSection('stats',this)"><span class="nav-icon">📊</span><span class="nav-label">إحصائيات</span></button>
+    <button class="nav-item" onclick="showSection('about',this)"><span class="nav-icon">ℹ️</span><span class="nav-label">عن النظام</span></button>`;
+  showLanding();
+  showToast('تم تسجيل الخروج بنجاح', 'info');
+  document.getElementById('notif-badge').style.display = 'none';
+  notifications = [];
+  document.getElementById('notification-list').innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:18px;font-size:13px;">لا توجد إشعارات</p>';
+}
+
+// =================== PARTICLES ===================
+function initParticles(){
+  const canvas = document.getElementById('particles-canvas');
+  const ctx = canvas.getContext('2d');
+  let pts=[], w, h;
+  const resize=()=>{ w=canvas.width=window.innerWidth; h=canvas.height=window.innerHeight; };
+  resize(); window.addEventListener('resize', resize);
+  for(let i=0;i<70;i++) pts.push({x:Math.random()*1920,y:Math.random()*1080,vx:(Math.random()-.5)*.4,vy:(Math.random()-.5)*.4,sz:Math.random()*2.5+.5,a:Math.random()*.5+.1});
+  let mx=960, my=540;
+  document.addEventListener('mousemove', e=>{ mx=e.clientX; my=e.clientY; });
+  const draw=()=>{
+    ctx.clearRect(0,0,w,h);
+    pts.forEach(p=>{
+      p.x+=p.vx; p.y+=p.vy;
+      if(p.x<0)p.x=w; if(p.x>w)p.x=0; if(p.y<0)p.y=h; if(p.y>h)p.y=0;
+      ctx.beginPath(); ctx.arc(p.x,p.y,p.sz,0,Math.PI*2); ctx.fillStyle=`rgba(255,107,53,${p.a})`; ctx.fill();
+    });
+    for(let i=0;i<pts.length;i++) for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x, dy=pts[i].y-pts[j].y, d=Math.sqrt(dx*dx+dy*dy);
+      if(d<160){ ctx.beginPath(); ctx.moveTo(pts[i].x,pts[i].y); ctx.lineTo(pts[j].x,pts[j].y); ctx.strokeStyle=`rgba(255,107,53,${.07*(1-d/160)})`; ctx.lineWidth=.5; ctx.stroke(); }
+    }
+    requestAnimationFrame(draw);
+  };
+  draw();
+}
+
+// =================== NAVIGATION ===================
+function showLanding(){
+  document.getElementById('landing-page').classList.remove('hidden');
+  document.getElementById('role-selection').classList.remove('active');
+  document.getElementById('user-form').classList.remove('active');
+  document.getElementById('company-form').classList.remove('active');
+}
+function showRoleSelection(){
+  document.getElementById('landing-page').classList.add('hidden');
+  document.getElementById('role-selection').classList.add('active');
+}
+function showUserForm(){ document.getElementById('role-selection').classList.remove('active'); document.getElementById('user-form').classList.add('active'); }
+function showCompanyForm(){ document.getElementById('role-selection').classList.remove('active'); document.getElementById('company-form').classList.add('active'); }
+
+// =================== CITY SEARCH ===================
+function searchCity(searchId, selectId){
+  const si = document.getElementById(searchId), rd = document.getElementById(searchId+'-results'), sel = document.getElementById(selectId);
+  const q = si.value.trim();
+  if(!q){ rd.classList.remove('active'); return; }
+  const matches = Object.keys(libyaData.cities).filter(c=>c.includes(q));
+  rd.innerHTML = '';
+  if(matches.length){
+    matches.forEach(city=>{
+      const d=document.createElement('div'); d.className='city-search-item'; d.textContent=city;
+      d.onclick=()=>{ sel.value=city; si.value=city; rd.classList.remove('active'); sel.dispatchEvent(new Event('change')); };
+      rd.appendChild(d);
+    });
+    rd.classList.add('active');
+  } else rd.classList.remove('active');
+}
+function showCityResults(id){ if(document.getElementById(id).value.trim()) document.getElementById(id+'-results').classList.add('active'); }
+function hideCityResultsDelayed(id){ setTimeout(()=>document.getElementById(id+'-results').classList.remove('active'),200); }
+
+// =================== POPULATE ===================
+function populateCities(){
+  const ids = ['user-city','report-city','company-region'];
+  ids.forEach(id=>{
+    const sel = document.getElementById(id); if(!sel) return;
+    sel.innerHTML = '<option value="">اختر المدينة</option>';
+    Object.keys(libyaData.cities).forEach(c=>{ const o=document.createElement('option'); o.value=c; o.textContent=c; sel.appendChild(o); });
+  });
+  document.getElementById('user-city')?.addEventListener('change', function(){ populateAreas('user-area',this.value); });
+  document.getElementById('report-city')?.addEventListener('change', function(){ populateAreas('report-area',this.value); });
+}
+function populateAreas(selId, city){
+  const sel=document.getElementById(selId); if(!sel) return;
+  sel.innerHTML='<option value="">اختر المنطقة</option>';
+  if(city && libyaData.cities[city]) libyaData.cities[city].forEach(a=>{ const o=document.createElement('option'); o.value=a; o.textContent=a; sel.appendChild(o); });
+}
+function populateDevices(){
+  ['device-grid','diag-device-grid'].forEach(gid=>{
+    const g=document.getElementById(gid); if(!g) return; g.innerHTML='';
+    devices.forEach(d=>{ const el=document.createElement('div'); el.className='device-option'; el.dataset.id=d.id; el.innerHTML=`<span class="device-icon">${d.icon}</span>${d.name}`; el.onclick=()=>selectDevice(gid,d.id); g.appendChild(el); });
+  });
+}
+function populateSymptoms(){
+  ['symptoms-grid','diag-symptoms-grid'].forEach(gid=>{
+    const g=document.getElementById(gid); if(!g) return; g.innerHTML='';
+    symptoms.forEach((s,i)=>{ const el=document.createElement('div'); el.className='symptom-option'; el.dataset.idx=i; el.textContent=s; el.onclick=()=>toggleSymptom(gid,i); g.appendChild(el); });
+  });
+}
+function selectDevice(gid, did){
+  document.getElementById(gid).querySelectorAll('.device-option').forEach(e=>e.classList.remove('selected'));
+  document.getElementById(gid).querySelector(`[data-id="${did}"]`).classList.add('selected');
+  if(gid==='device-grid') selectedDevice=did; else selectedDiagDevice=did;
+}
+function toggleSymptom(gid, idx){
+  const el=document.getElementById(gid).querySelector(`[data-idx="${idx}"]`); el.classList.toggle('selected');
+  if(gid==='symptoms-grid'){ if(el.classList.contains('selected')) selectedSymptoms.push(idx); else selectedSymptoms=selectedSymptoms.filter(i=>i!==idx); }
+  else { if(el.classList.contains('selected')) selectedDiagSymptoms.push(idx); else selectedDiagSymptoms=selectedDiagSymptoms.filter(i=>i!==idx); }
+}
+
+// =================== REGISTER ===================
+function handleUserRegister(e){
+  e.preventDefault();
+  const name=document.getElementById('user-name').value, email=document.getElementById('user-email').value, city=document.getElementById('user-city').value, area=document.getElementById('user-area').value;
+  if(!city||!area){ showToast('يرجى اختيار المدينة والمنطقة','error'); return; }
+  currentUser={name,email,city,area,role:'user'};
+  localStorage.setItem('netpulse_user',JSON.stringify(currentUser));
+  document.getElementById('user-display-name').textContent=name;
+  document.getElementById('user-form').classList.remove('active');
+  document.getElementById('main-app').classList.add('active');
+  initMap(); showToast('مرحباً '+name+'! تم تسجيل دخولك','success'); addNotification('تم تسجيل دخولك كمستخدم','info');
+  setTimeout(()=>locateUser(),1500);
+}
+function handleCompanyRegister(e){
+  e.preventDefault();
+  const name=document.getElementById('company-name').value, service=document.getElementById('company-service').value, region=document.getElementById('company-region').value, email=document.getElementById('company-email').value;
+  if(!region){ showToast('يرجى اختيار المنطقة','error'); return; }
+  currentCompany={name,service,region,email,role:'company'};
+  localStorage.setItem('netpulse_company',JSON.stringify(currentCompany));
+  document.getElementById('user-display-name').textContent=name;
+  document.getElementById('company-form').classList.remove('active');
+  document.getElementById('main-app').classList.add('active');
+  document.getElementById('company-display-name').textContent=name;
+  document.getElementById('company-display-service').textContent=service;
+  setupCompanyNav(); initMap(); showToast('مرحباً '+name+'!','success'); addNotification('تم تسجيل دخول الشركة','info'); updateCompanyDashboard();
+}
+function setupCompanyNav(){
+  document.getElementById('bottom-nav').innerHTML=`
+    <button class="nav-item active" onclick="showSection('map',this)"><span class="nav-icon">🗺️</span><span class="nav-label">الخريطة</span></button>
+    <button class="nav-item" onclick="showSection('company',this)"><span class="nav-icon">📋</span><span class="nav-label">Dashboard</span></button>
+    <button class="nav-item" onclick="showSection('stats',this)"><span class="nav-icon">📊</span><span class="nav-label">إحصائيات</span></button>
+    <button class="nav-item" onclick="showSection('about',this)"><span class="nav-icon">ℹ️</span><span class="nav-label">عن النظام</span></button>`;
+}
+
+// =================== MAP ===================
+function initMap(){
+  if(map){ setTimeout(()=>map.invalidateSize(),100); return; }
+  map=L.map('map',{center:[27.0,17.0],zoom:6,zoomControl:true,attributionControl:false});
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:19,opacity:.92}).addTo(map);
+  Object.entries(cityCoords).forEach(([city,coords])=>{
+    const m=L.circleMarker(coords,{radius:8,fillColor:'#FF6B35',color:'#D4AF37',weight:2,opacity:.9,fillOpacity:.75}).addTo(map);
+    m.bindPopup(`<h4>📍 ${city}</h4><p>اضغط لمعرفة التغطية</p>`,{closeButton:false});
+    m.on('click',()=>showCityCoverage(city));
+    markers.push(m);
+  });
+  map.on('click', e=>{ if(coverageMode) showPointCoverage(e.latlng); });
+  setTimeout(()=>map.invalidateSize(),500);
+}
+
+function locateUser(){
+  if(!map) return;
+  const city=currentUser?currentUser.city:(currentCompany?currentCompany.region:null);
+  if(city && cityCoords[city]){
+    map.flyTo(cityCoords[city],12,{duration:1.5});
+    const icon=L.divIcon({className:'',html:'<div style="width:22px;height:22px;background:linear-gradient(135deg,#D4AF37,#F0D878);border-radius:50%;box-shadow:0 0 25px #D4AF37;animation:pulse-gold 2s ease-in-out infinite;border:3px solid #fff;"></div>',iconSize:[22,22],iconAnchor:[11,11]});
+    const m=L.marker(cityCoords[city],{icon}).addTo(map); m.bindPopup(`<h4>📍 موقعك: ${city}</h4>`); markers.push(m);
+    showToast('تم تحديد موقعك: '+city,'success'); setTimeout(()=>showCityCoverage(city),1800);
+  } else if(navigator.geolocation){
+    navigator.geolocation.getCurrentPosition(pos=>{
+      map.flyTo([pos.coords.latitude,pos.coords.longitude],14,{duration:1.5});
+      showToast('تم تحديد موقعك الحالي','success');
+    },()=>showToast('تعذر تحديد الموقع','error'));
+  }
+}
+function toggleCoverageMode(){
+  coverageMode=!coverageMode;
+  document.getElementById('btn-coverage').classList.toggle('active',coverageMode);
+  showToast(coverageMode?'اضغط على أي مدينة لمعرفة التغطية':'تم إيقاف وضع التغطية','info');
+}
+function showCityCoverage(city){
+  const data=coverageData[city]||defaultCoverage;
+  document.getElementById('coverage-city-name').textContent='مدينة: '+city;
+  let html='';
+  Object.entries(data).forEach(([company,info])=>{
+    const c=info.s>80?'#00C853':info.s>60?'#FFB300':'#FF4444';
+    html+=`<div class="coverage-bar"><div class="coverage-bar-label">${company}</div><div class="coverage-bar-track"><div class="coverage-bar-fill" style="width:${info.s}%;background:${c};"></div></div><div class="coverage-bar-value">${info.s}%</div></div>`;
+    html+=`<div class="coverage-detail"><strong>النوع:</strong> ${info.t} &nbsp;|&nbsp; <strong>ملاحظة:</strong> ${info.n}</div>`;
+  });
+  document.getElementById('coverage-content').innerHTML=html;
+  document.getElementById('coverage-panel').classList.add('active');
+}
+function showPointCoverage(latlng){
+  let nearest=null, minD=Infinity;
+  Object.entries(cityCoords).forEach(([c,coords])=>{ const d=Math.hypot(latlng.lat-coords[0],latlng.lng-coords[1]); if(d<minD){minD=d;nearest=c;} });
+  if(nearest && minD<2) showCityCoverage(nearest); else showToast('لا توجد بيانات لهذه المنطقة','warning');
+}
+function closeCoveragePanel(){ document.getElementById('coverage-panel').classList.remove('active'); }
+function toggleHeatmap(){
+  const btn=document.getElementById('btn-heatmap'); btn.classList.toggle('active');
+  if(btn.classList.contains('active')){
+    showToast('تم تفعيل خريطة الحرارة','success');
+    [...reports,...fakeCompanyReports].forEach(r=>{ const c=cityCoords[r.city]; if(c) L.circle(c,{radius:18000,fillColor:'#FF4444',color:'transparent',fillOpacity:.25}).addTo(map); });
+  } else {
+    showToast('تم إيقاف خريطة الحرارة','info');
+    map.eachLayer(l=>{ if(l instanceof L.Circle&&!(l instanceof L.CircleMarker)) map.removeLayer(l); });
+  }
+}
+function toggleLayers(){ showToast('الطبقات: 🔴 بلاغات | 🟠 مدن | 🟢 تغطية','info'); }
+
+// =================== MAP FLY ANIMATION ===================
+function triggerMapFlyAnimation(targetCoords, fromCoords){
+  const mapContainer = document.getElementById('map-container');
+  const overlay = document.getElementById('map-fly-overlay');
+  if(!mapContainer || !overlay) return;
+
+  // Clear any old animation elements
+  overlay.innerHTML = '';
+  overlay.classList.add('active');
+
+  const containerRect = mapContainer.getBoundingClientRect();
+
+  // Convert lat/lng to pixel position on map (approximate center of map)
+  function latlngToPixel(lat, lng, mapBounds, containerW, containerH){
+    const latMin = mapBounds.getSouth(), latMax = mapBounds.getNorth();
+    const lngMin = mapBounds.getWest(), lngMax = mapBounds.getEast();
+    const x = ((lng - lngMin) / (lngMax - lngMin)) * containerW;
+    const y = ((latMax - lat) / (latMax - latMin)) * containerH;
+    return {x, y};
+  }
+
+  // First: flash effect on the screen
+  const flash = document.createElement('div');
+  flash.style.cssText = `position:absolute;top:0;left:0;right:0;bottom:0;background:radial-gradient(circle at center, rgba(255,107,53,0.15) 0%, transparent 70%);animation:flash-fade 0.8s ease-out forwards;pointer-events:none;`;
+  overlay.appendChild(flash);
+
+  // Add flash-fade keyframe dynamically if not exists
+  if(!document.getElementById('fly-anim-style')){
+    const style = document.createElement('style');
+    style.id = 'fly-anim-style';
+    style.textContent = `
+      @keyframes flash-fade{0%{opacity:1}100%{opacity:0}}
+      @keyframes ripple-expand{0%{transform:translate(-50%,-50%) scale(0);opacity:1}100%{transform:translate(-50%,-50%) scale(1);opacity:0}}
+      @keyframes pin-bounce{0%{transform:translate(-50%,-200%) scale(0.5);opacity:0}50%{transform:translate(-50%,-40%) scale(1.2);opacity:1}70%{transform:translate(-50%,-60%) scale(0.9)}100%{transform:translate(-50%,-50%) scale(1);opacity:1}}
+      @keyframes trail-anim{0%{height:80px;opacity:0.8}100%{height:0;opacity:0}}
+      @keyframes scan-line{0%{transform:translateY(-100%)}100%{transform:translateY(200%)}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  // Create ripple rings at target (center of screen for now)
+  const cx = containerRect.width / 2;
+  const cy = containerRect.height / 2;
+
+  // Multiple ripple rings
+  [0, 200, 400].forEach((delay, i) => {
+    const ring = document.createElement('div');
+    const size = 60 + i * 40;
+    ring.style.cssText = `
+      position:absolute;
+      left:${cx}px; top:${cy}px;
+      width:${size}px; height:${size}px;
+      border-radius:50%;
+      border:2px solid rgba(255,107,53,${0.8 - i*0.2});
+      box-shadow:0 0 20px rgba(255,107,53,0.4);
+      animation:ripple-expand 1.2s ease-out ${delay}ms forwards;
+      pointer-events:none;
+    `;
+    overlay.appendChild(ring);
+  });
+
+  // Animated pin drop at center
+  setTimeout(()=>{
+    const pin = document.createElement('div');
+    pin.innerHTML = '🚨';
+    pin.style.cssText = `
+      position:absolute;
+      left:${cx}px; top:${cy}px;
+      font-size:28px;
+      line-height:1;
+      animation:pin-bounce 0.7s cubic-bezier(.34,1.56,.64,1) forwards;
+      pointer-events:none;
+      filter:drop-shadow(0 0 12px rgba(255,68,68,0.8));
+    `;
+    overlay.appendChild(pin);
+
+    // Trail below pin
+    const trail = document.createElement('div');
+    trail.style.cssText = `
+      position:absolute;
+      left:${cx - 1}px; top:${cy}px;
+      width:3px;
+      background:linear-gradient(180deg,rgba(255,107,53,0.8),transparent);
+      animation:trail-anim 0.6s ease-out forwards;
+      pointer-events:none;
+      border-radius:2px;
+    `;
+    overlay.appendChild(trail);
+  }, 150);
+
+  // Scan line effect
+  const scan = document.createElement('div');
+  scan.style.cssText = `
+    position:absolute;
+    left:0;right:0;
+    height:3px;
+    background:linear-gradient(90deg,transparent,rgba(255,107,53,0.5),rgba(255,107,53,0.9),rgba(255,107,53,0.5),transparent);
+    animation:scan-line 0.8s ease-in-out 0.3s forwards;
+    pointer-events:none;
+    box-shadow:0 0 10px rgba(255,107,53,0.5);
+  `;
+  overlay.appendChild(scan);
+
+  // Clean up overlay after animation
+  setTimeout(()=>{
+    overlay.innerHTML = '';
+    overlay.classList.remove('active');
+  }, 2000);
+}
+
+// =================== SECTIONS ===================
+function showSection(section, btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('map-container').classList.remove('active');
+  document.getElementById('coverage-panel').classList.remove('active');
+  const mo=document.getElementById('map-overlay-btns');
+  if(mo) mo.classList.remove('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  if(section==='map'){ document.getElementById('map-container').classList.add('active'); if(mo) mo.classList.add('active'); if(map) setTimeout(()=>map.invalidateSize(),100); }
+  else if(section==='report') document.getElementById('report-section').classList.add('active');
+  else if(section==='diagnosis') document.getElementById('diagnosis-section').classList.add('active');
+  else if(section==='stats'){ document.getElementById('stats-section').classList.add('active'); updateStats(); }
+  else if(section==='about') document.getElementById('about-section').classList.add('active');
+  else if(section==='company'){ document.getElementById('company-section').classList.add('active'); updateCompanyDashboard(); }
+  else if(section==='tickets'){ document.getElementById('tickets-section').classList.add('active'); renderUserTickets(); }
+}
+
+// =================== REPORTS ===================
+function submitReport(){
+  if(!selectedDevice){ showToast('يرجى اختيار الجهاز','error'); return; }
+  if(!document.getElementById('report-company').value){ showToast('يرجى اختيار شركة الاتصال','error'); return; }
+  const city=document.getElementById('report-city').value, area=document.getElementById('report-area').value;
+  if(!city||!area){ showToast('يرجى اختيار المدينة والمنطقة','error'); return; }
+  if(selectedSymptoms.length===0){ showToast('يرجى اختيار عرض واحد على الأقل','error'); return; }
+
+  const dev=devices.find(d=>d.id===selectedDevice);
+  const report={id:Date.now(),device:dev.name,company:document.getElementById('report-company').value,city,area,symptoms:selectedSymptoms.map(i=>symptoms[i]),notes:document.getElementById('report-notes').value,date:new Date().toLocaleString('ar-LY'),status:'pending',userName:currentUser?currentUser.name:'مستخدم',replies:[]};
+  reports.push(report); userReports.push(report);
+  localStorage.setItem('netpulse_user_reports',JSON.stringify(userReports));
+
+  // Target coords for the fly animation
+  const targetCoords = cityCoords[city];
+
+  // Reset form
+  selectedDevice=null; selectedSymptoms=[];
+  document.querySelectorAll('#device-grid .device-option, #symptoms-grid .symptom-option').forEach(e=>e.classList.remove('selected'));
+  ['report-company','report-city','report-area'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('report-city-search').value=''; document.getElementById('report-notes').value='';
+
+  // Show success toast
+  showToast('تم إرسال البلاغ بنجاح! 🚨','success');
+  addNotification('بلاغ جديد مُرسل — '+city+' / '+report.company,'error');
+
+  // Switch to map view first
+  const mapNavBtn = document.querySelector('.nav-item');
+  showSection('map', mapNavBtn);
+
+  // Now trigger the animated fly-to
+  if(targetCoords && map){
+    // Small delay to let the map become visible
+    setTimeout(()=>{
+      map.invalidateSize();
+
+      // Trigger visual animation overlay
+      triggerMapFlyAnimation(targetCoords, lastReportCoords);
+
+      // Fly map to location
+      const zoomLevel = lastReportCoords ? 10 : 13;
+      const flyDuration = lastReportCoords ? 2.5 : 1.8;
+
+      map.flyTo(targetCoords, zoomLevel, {
+        duration: flyDuration,
+        easeLinearity: 0.25
+      });
+
+      // After fly completes, zoom in closer and add marker
+      setTimeout(()=>{
+        map.flyTo(targetCoords, 13, { duration: 1.2, easeLinearity: 0.5 });
+
+        // Add report marker with animation
+        const icon=L.divIcon({className:'',html:'<div style="width:18px;height:18px;background:#FF4444;border-radius:50%;box-shadow:0 0 20px #FF4444,0 0 40px rgba(255,68,68,0.5);animation:pulse-red 2s ease-in-out infinite;border:2px solid #fff;"></div>',iconSize:[18,18],iconAnchor:[9,9]});
+        const m=L.marker(targetCoords,{icon}).addTo(map);
+        m.bindPopup(`<h4>🚨 بلاغ جديد</h4><p><strong>الجهاز:</strong> ${report.device}</p><p><strong>الشركة:</strong> ${report.company}</p><p><strong>المدينة:</strong> ${report.city} — ${report.area}</p><p>⚠️ ${report.symptoms[0]}</p>`);
+        m.openPopup();
+        markers.push(m);
+      }, flyDuration * 1000 + 200);
+
+      lastReportCoords = targetCoords;
+    }, 300);
+  }
+
+  updateStats();
+}
+
+// =================== DIAGNOSIS ===================
+function runDiagnosis(){
+  if(!selectedDiagDevice){ showToast('يرجى اختيار الجهاز','error'); return; }
+  if(!document.getElementById('diag-company').value){ showToast('يرجى اختيار الشركة','error'); return; }
+  if(selectedDiagSymptoms.length===0){ showToast('يرجى اختيار عرض واحد','error'); return; }
+  const dev=devices.find(d=>d.id===selectedDiagDevice), company=document.getElementById('diag-company').value;
+  const names=selectedDiagSymptoms.map(i=>symptoms[i]);
+  let best=null, maxM=0;
+  Object.entries(diagnosisDB).forEach(([sym,data])=>{
+    const m=names.filter(s=>s.includes(sym)||sym.includes(s.substring(0,5))).length;
+    if(m>maxM){ maxM=m; best=data; }
+  });
+  const diag=best||defaultDiagnosis;
+  const confidence=Math.min(95,50+maxM*15);
+  let html=`<div class="diagnosis-result"><h4>🔬 نتيجة التشخيص الذكي</h4>
+  <div style="margin-bottom:13px;padding:11px;background:rgba(0,176,255,.1);border-radius:11px;font-size:13px;border:1px solid rgba(0,176,255,.15);">
+    <strong>الجهاز:</strong> ${dev.name} &nbsp;|&nbsp; <strong>الشركة:</strong> ${company} &nbsp;|&nbsp; <strong>الأعراض:</strong> ${names.length}</div>
+  <div class="diag-cause"><div class="diag-cause-label">🔴 الأسباب المحتملة:</div>`;
+  diag.causes.forEach(c=>{ const cls=c.p>=70?'prob-high':c.p>=40?'prob-med':'prob-low'; html+=`<div style="margin:7px 0;font-size:13px;display:flex;align-items:center;flex-wrap:wrap;gap:6px;">• ${c.name}<span class="prob-badge ${cls}">${c.p}%</span></div>`; });
+  html+=`</div><div style="margin-top:13px;"><div class="diag-rec-label">🟢 التوصيات المقترحة:</div>`;
+  diag.recs.forEach((r,i)=>html+=`<div class="diag-rec"><div style="font-size:13px;display:flex;align-items:center;gap:8px;"><span style="width:22px;height:22px;border-radius:50%;background:rgba(0,200,83,.18);color:var(--success);display:flex;align-items:center;justify-content:center;font-size:11px;flex-shrink:0;">${i+1}</span>${r}</div></div>`);
+  html+=`</div><div style="margin-top:14px;padding:11px;background:rgba(255,107,53,.05);border-radius:11px;border:1px solid rgba(255,107,53,.13);">
+    <div style="font-size:11px;color:var(--text-muted);margin-bottom:5px;">نسبة ثقة التشخيص</div>
+    <div style="display:flex;align-items:center;gap:10px;"><div style="flex:1;height:7px;background:rgba(0,0,0,.3);border-radius:3px;overflow:hidden;"><div style="width:${confidence}%;height:100%;background:linear-gradient(90deg,var(--primary),var(--gold));border-radius:3px;"></div></div><span style="font-size:13px;font-weight:700;color:var(--primary-light);">${confidence}%</span></div></div></div>`;
+  document.getElementById('diagnosis-result-container').innerHTML=html;
+  showToast('تم إكمال التشخيص','success');
+}
+
+// =================== STATS ===================
+function updateStats(){
+  const all=[...reports,...userReports.filter(r=>!reports.find(x=>x.id===r.id))];
+  document.getElementById('stat-total').textContent=all.length;
+  document.getElementById('stat-active').textContent=all.filter(r=>r.status==='pending').length;
+  document.getElementById('stat-resolved').textContent=all.filter(r=>r.status==='resolved'||r.status==='closed').length;
+  Object.values(chartInstances).forEach(c=>{try{c.destroy();}catch(e){}});
+  chartInstances={};
+  const co={},fa={},de={},ar={};
+  all.forEach(r=>{ co[r.company]=(co[r.company]||0)+1; de[r.device]=(de[r.device]||0)+1; ar[r.city]=(ar[r.city]||0)+1; r.symptoms.forEach(s=>fa[s]=(fa[s]||0)+1); });
+  mkChart('chart-companies','bar',Object.keys(co),Object.values(co),'rgba(255,107,53,.75)','#FF6B35');
+  const tf=Object.entries(fa).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  mkChart('chart-faults','doughnut',tf.map(f=>f[0].substring(0,14)+'…'),tf.map(f=>f[1]),['#FF6B35','#D4AF37','#FF4444','#00C853','#00B0FF','#FFB300','#9C27B0']);
+  mkChart('chart-devices','bar',Object.keys(de),Object.values(de),'rgba(0,176,255,.75)','#00B0FF');
+  const ta=Object.entries(ar).sort((a,b)=>b[1]-a[1]).slice(0,7);
+  mkChart('chart-areas','line',ta.map(a=>a[0]),ta.map(a=>a[1]),'rgba(212,175,55,.2)','#D4AF37');
+}
+function mkChart(id,type,labels,data,bg,border){
+  const el=document.getElementById(id); if(!el) return;
+  const isDoughnut=type==='doughnut', isLine=type==='line';
+  chartInstances[id]=new Chart(el,{type,data:{labels,datasets:[{label:'',data,backgroundColor:isDoughnut?bg:bg,borderColor:isDoughnut?undefined:border,borderWidth:1,borderRadius:isDoughnut?0:7,fill:isLine?true:undefined,tension:isLine?.4:undefined,pointBackgroundColor:isLine?border:undefined,pointRadius:isLine?3:undefined}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:isDoughnut,position:'right',labels:{color:'rgba(255,255,255,.7)',font:{size:10}}}},scales:isDoughnut?{}:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.55)',font:{size:10}}},x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.55)',font:{size:10}}}}}});
+}
+
+// =================== COMPANY DASHBOARD ===================
+function updateCompanyDashboard(){
+  if(!currentCompany) return;
+  const all=[...fakeCompanyReports.filter(r=>r.company===currentCompany.name),...reports.filter(r=>r.company===currentCompany.name)];
+  document.getElementById('company-stat-total').textContent=all.length;
+  document.getElementById('company-stat-pending').textContent=all.filter(r=>r.status==='pending').length;
+  document.getElementById('company-stat-resolved').textContent=all.filter(r=>r.status==='resolved'||r.status==='closed').length;
+  document.getElementById('company-stat-areas').textContent=[...new Set(all.map(r=>r.city))].length;
+  renderTickets(all);
+  renderAnnouncements();
+  renderCompanyCharts(all);
+}
+function renderTickets(all){
+  const el=document.getElementById('company-tickets'); if(!el) return;
+  if(all.length===0){ el.innerHTML='<p style="text-align:center;color:var(--text-muted);padding:18px;font-size:13px;">لا توجد بلاغات بعد</p>'; return; }
+  el.innerHTML=all.map(r=>`<div class="ticket-card">
+    <div class="ticket-header">
+      <div><div style="font-size:14px;font-weight:700;">${r.city} — ${r.area}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${r.device} | ${r.date} | ${r.userName||'مستخدم'}</div></div>
+      <span class="ticket-status ${r.status==='pending'?'pending':r.status==='replied'?'replied':'closed'}">${r.status==='pending'?'⏳ جديد':r.status==='replied'?'✅ تم الرد':'🔒 مغلق'}</span>
+    </div>
+    <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">🏢 ${r.company} &nbsp;|&nbsp; ⚠️ ${r.symptoms[0]}</div>
+    ${r.notes?`<div style="font-size:12px;color:var(--text-muted);margin-bottom:8px;">📝 ${r.notes}</div>`:''}
+    <div class="ticket-replies" id="replies-${r.id}">${r.replies&&r.replies.length?r.replies.map(rep=>`<div class="reply-bubble ${rep.from==='company'?'reply-company':'reply-user'}"><div>${rep.text}</div><div class="reply-meta">${rep.from==='company'?'الشركة':'المستخدم'} — ${rep.time}</div></div>`).join(''):''}</div>
+    <div class="ticket-reply-box" id="reply-box-${r.id}">
+      <textarea class="ticket-reply-input" id="reply-text-${r.id}" placeholder="اكتب الرد هنا..."></textarea>
+      <div style="display:flex;gap:8px;margin-top:8px;">
+        <button onclick="sendReply(${r.id})" style="flex:1;padding:9px;background:var(--success);border:none;border-radius:9px;color:#fff;font-family:'Tajawal',sans-serif;font-size:13px;font-weight:700;cursor:pointer;">📤 إرسال الرد</button>
+        <button onclick="closeTicket(${r.id})" style="padding:9px 14px;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.1);border-radius:9px;color:var(--text-muted);font-family:'Tajawal',sans-serif;font-size:12px;cursor:pointer;">🔒 إغلاق</button>
+      </div>
+    </div>
+    <button onclick="toggleReplyBox(${r.id})" style="width:100%;margin-top:9px;padding:8px;background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.2);border-radius:9px;color:var(--primary-light);font-family:'Tajawal',sans-serif;font-size:12px;cursor:pointer;">💬 ${r.status==='pending'?'رد على البلاغ':'عرض الردود'}</button>
+  </div>`).join('');
+}
+function toggleReplyBox(id){ const el=document.getElementById('reply-box-'+id); if(el) el.classList.toggle('active'); }
+function sendReply(id){
+  const txt=document.getElementById('reply-text-'+id)?.value?.trim();
+  if(!txt){ showToast('يرجى كتابة الرد','error'); return; }
+  const fake=fakeCompanyReports.find(r=>r.id===id), real=reports.find(r=>r.id===id);
+  const target=fake||real;
+  if(target){
+    if(!target.replies) target.replies=[];
+    const rep={from:'company',text:txt,time:new Date().toLocaleString('ar-LY')};
+    target.replies.push(rep); target.status='replied';
+    const el=document.getElementById('replies-'+id);
+    if(el){ const d=document.createElement('div'); d.className='reply-bubble reply-company'; d.innerHTML=`<div>${txt}</div><div class="reply-meta">الشركة — ${rep.time}</div>`; el.appendChild(d); }
+    document.getElementById('reply-text-'+id).value='';
+    document.getElementById('reply-box-'+id)?.classList.remove('active');
+    showToast('تم إرسال الرد بنجاح ✅','success');
+    addNotification('رد مُرسل على بلاغ '+target.city,'success');
+  }
+}
+function closeTicket(id){
+  const fake=fakeCompanyReports.find(r=>r.id===id), real=reports.find(r=>r.id===id);
+  const target=fake||real;
+  if(target){ target.status='closed'; showToast('تم إغلاق التذكرة','info'); updateCompanyDashboard(); }
+}
+function renderAnnouncements(){
+  const el=document.getElementById('announcements-list'); if(!el) return;
+  if(announcements.length===0){ el.innerHTML='<p style="color:var(--text-muted);font-size:13px;text-align:center;padding:14px;">لا توجد إعلانات بعد</p>'; return; }
+  el.innerHTML=announcements.map((a,i)=>`<div class="announcement-card"><h5>📢 ${a.title}</h5><p>${a.body}</p><div class="announcement-meta">${a.company} — ${a.date}</div></div>`).join('');
+}
+function postAnnouncement(){
+  const title=document.getElementById('ann-title')?.value?.trim(), body=document.getElementById('ann-body')?.value?.trim();
+  if(!title||!body){ showToast('يرجى ملء جميع الحقول','error'); return; }
+  const ann={id:Date.now(),title,body,company:currentCompany?.name||'شركة',date:new Date().toLocaleString('ar-LY')};
+  announcements.unshift(ann);
+  localStorage.setItem('netpulse_announcements',JSON.stringify(announcements));
+  document.getElementById('ann-title').value=''; document.getElementById('ann-body').value='';
+  renderAnnouncements(); showToast('تم نشر الإعلان بنجاح 📢','success');
+  addNotification('إعلان جديد: '+title,'info');
+}
+function renderCompanyCharts(all){
+  const ar={}, fa={};
+  all.forEach(r=>{ ar[r.city]=(ar[r.city]||0)+1; r.symptoms.forEach(s=>fa[s]=(fa[s]||0)+1); });
+  if(chartInstances.ca) try{chartInstances.ca.destroy();}catch(e){}
+  if(chartInstances.cf) try{chartInstances.cf.destroy();}catch(e){}
+  const el1=document.getElementById('chart-company-areas'), el2=document.getElementById('chart-company-faults');
+  if(el1) chartInstances.ca=new Chart(el1,{type:'bar',data:{labels:Object.keys(ar).length?Object.keys(ar):['لا توجد'],datasets:[{data:Object.values(ar).length?Object.values(ar):[0],backgroundColor:'rgba(255,68,68,.75)',borderColor:'#FF4444',borderWidth:1,borderRadius:7}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'rgba(255,255,255,.55)',font:{size:10}}},x:{grid:{display:false},ticks:{color:'rgba(255,255,255,.55)',font:{size:10}}}}}});
+  const tf=Object.entries(fa).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if(el2) chartInstances.cf=new Chart(el2,{type:'pie',data:{labels:tf.length?tf.map(f=>f[0].substring(0,12)+'…'):['لا توجد'],datasets:[{data:tf.length?tf.map(f=>f[1]):[1],backgroundColor:['#FF6B35','#D4AF37','#FF4444','#00C853','#00B0FF','#FFB300'],borderWidth:0}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{color:'rgba(255,255,255,.7)',font:{size:9}}}}}});
+}
+function switchTab(tab){
+  document.querySelectorAll('.dashboard-tab').forEach(t=>t.classList.remove('active'));
+  event.target.classList.add('active');
+  document.getElementById('tab-reports').style.display=tab==='reports'?'block':'none';
+  document.getElementById('tab-announcements').style.display=tab==='announcements'?'block':'none';
+  document.getElementById('tab-analytics').style.display=tab==='analytics'?'block':'none';
+  if(tab==='analytics') setTimeout(()=>renderCompanyCharts([...fakeCompanyReports.filter(r=>r.company===currentCompany?.name),...reports.filter(r=>r.company===currentCompany?.name)]),100);
+}
+
+// User tickets
+function renderUserTickets(){
+  const el=document.getElementById('user-tickets-list'); if(!el) return;
+  if(userReports.length===0){ el.innerHTML='<div class="glass-card"><p style="text-align:center;color:var(--text-muted);padding:14px;font-size:13px;">لم ترسل أي بلاغات بعد</p></div>'; return; }
+  el.innerHTML=userReports.map(r=>{
+    const fake=fakeCompanyReports.find(f=>f.id===r.id)||reports.find(f=>f.id===r.id)||r;
+    return `<div class="ticket-card">
+      <div class="ticket-header"><div><div style="font-size:14px;font-weight:700;">${r.company} — ${r.city}</div><div style="font-size:11px;color:var(--text-muted);margin-top:2px;">${r.device} | ${r.date}</div></div>
+      <span class="ticket-status ${fake.status==='pending'?'pending':fake.status==='replied'?'replied':'closed'}">${fake.status==='pending'?'⏳ قيد الانتظار':fake.status==='replied'?'✅ تم الرد':'🔒 مغلق'}</span></div>
+      <div style="font-size:13px;color:var(--text-secondary);margin-bottom:8px;">⚠️ ${r.symptoms[0]}</div>
+      <div class="ticket-replies">${(fake.replies||[]).map(rep=>`<div class="reply-bubble ${rep.from==='company'?'reply-company':'reply-user'}"><div>${rep.text}</div><div class="reply-meta">${rep.from==='company'?'رد الشركة':'أنت'} — ${rep.time}</div></div>`).join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+// =================== NOTIFICATIONS ===================
+function toggleNotifications(){ document.getElementById('notification-panel').classList.toggle('active'); }
+function addNotification(title, type){
+  notifications.unshift({id:Date.now(),title,type,time:'الآن'});
+  const badge=document.getElementById('notif-badge');
+  badge.textContent=notifications.length; badge.style.display='flex';
+  const list=document.getElementById('notification-list');
+  const colors={error:'#FF4444',warning:'#FFB300',success:'#00C853',info:'#00B0FF'};
+  const icons={error:'🚨',warning:'⚠️',success:'✅',info:'ℹ️'};
+  const d=document.createElement('div'); d.className='notification-item';
+  d.innerHTML=`<div class="notification-item-icon" style="background:${colors[type]}20;color:${colors[type]};">${icons[type]}</div><div class="notification-item-content"><div class="notification-item-title">${title}</div><div class="notification-item-time">الآن</div></div>`;
+  if(list.querySelector('p')) list.innerHTML='';
+  list.insertBefore(d,list.firstChild);
+}
+
+// =================== TOAST ===================
+function showToast(msg, type){
+  const c=document.getElementById('toast-container'), t=document.createElement('div');
+  t.className=`toast ${type}`; t.innerHTML=`<span>${{success:'✅',error:'🚨',info:'ℹ️',warning:'⚠️'}[type]}</span> ${msg}`;
+  c.appendChild(t); setTimeout(()=>t.remove(),3400);
+}
+
+// User nav — add tickets tab if user
+window.addEventListener('DOMContentLoaded',()=>{
+  setTimeout(()=>{
+    if(currentUser){
+      const nav=document.getElementById('bottom-nav');
+      if(nav && !nav.querySelector('[data-tickets]')){
+        const btn=document.createElement('button');
+        btn.className='nav-item'; btn.setAttribute('data-tickets','1');
+        btn.innerHTML='<span class="nav-icon">📬</span><span class="nav-label">تذاكري</span>';
+        btn.onclick=function(){ showSection('tickets',this); };
+        nav.appendChild(btn);
+      }
+    }
+  },3500);
+});
+</script>
+</body>
+</html>
